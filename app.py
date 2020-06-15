@@ -18,7 +18,7 @@ from dash_util import parse_state, apply_default_value, dash_kwarg
 p = inflect.engine()
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
+server = app.server
 # from util import get_percentiles
 
 # clean_data = pd.read_csv("../CLEAN_DATA.csv")
