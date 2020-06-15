@@ -1,0 +1,15 @@
+black
+dash
+dash-bootstrap-components
+dash-multi
+Flask-Caching
+flake8
+gunicorn
+jitcache
+pandas
+psutil
+rpy2
+scikit-learn
+xlrd
+requests
+inflect
