@@ -24,6 +24,7 @@ chart_studio.tools.set_credentials_file(username='sjtrny', api_key='ElnyL3o3mKjq
 p = inflect.engine()
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app.title = "NSW Teacher Pay"
 server = app.server
 # from util import get_percentiles
 
