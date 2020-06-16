@@ -96,7 +96,7 @@ def build_layout(params):
                     style={"fontSize": 18},
                 ),
             ], width=2)
-        ]) if orca_available else html.Div(),
+        ]),
         html.Hr(),
         dbc.Row([
             dbc.Col([
