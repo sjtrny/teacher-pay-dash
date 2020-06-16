@@ -2,6 +2,7 @@ black
 dash
 dash-bootstrap-components
 dash-multi
+chart_studio
 Flask-Caching
 flake8
 gunicorn
