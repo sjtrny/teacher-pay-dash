@@ -32,24 +32,12 @@ server = app.server
 
 pcnt_data = pd.read_csv("percentiles.csv")
 
-# default_occs = [
-#     'Accountants',
-#     'Primary School Teachers',
-#     'Secondary School Teachers',
-#     'Medical Practitioners',
-#     'Solicitors',
-#     'Police Bachelor',
-#     'Police assoc. diploma',
-#     'Registered Nurses',
-# ]
-
 resolutions = [
     [1920, 1080],
     [2560, 1440],
     [3840, 2160],
     [5120, 2880],
     [7680, 4320],
-    [19200, 10800],
 ]
 
 resolution_dict = {r[0]: r for r in resolutions}
