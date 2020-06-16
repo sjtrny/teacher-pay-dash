@@ -1,0 +1,12 @@
+name: myproject
+channels:
+- plotly
+dependencies:
+- python=3.6
+- plotly-orca
+- pip:
+   - gunicorn
+   - pandas
+   - inflect
+   - dash
+   - dash-bootstrap-components
