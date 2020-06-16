@@ -1,6 +1,7 @@
 import ast
 import io
 from urllib.parse import urlencode
+from shutil import which
 
 import dash
 import dash_bootstrap_components as dbc
@@ -57,13 +58,7 @@ scale_options = {
     'Weekly': 1
 }
 
-try:
-    import plotly.io as pio
-    status = pio.orca.status
-    orca_available = True
-except:
-    orca_available = False
-
+orca_available = False if which("orca") is None else True
 
 def build_layout(params):
 
