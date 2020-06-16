@@ -85,7 +85,7 @@ def build_layout(params):
                     ] if orca_available else [
                         {"label": "PNG", "value": "png"},
                     ],
-                    value="pdf"
+                    value="png"
                 ),
             ], width=2),
             dbc.Col([
@@ -195,8 +195,7 @@ def figure_dict(percentile, year, scale, occupations):
         )
 
     layout = go.Layout(
-        height=1080,
-        # width=1920,
+        height=800,
         # title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> Full Time Workers in Occupations Holding Bachelor Degrees",
         title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> ACCURATELY DESCRIBE THIS SET OF DATA",
         yaxis={'title': f"{scale} Income"},
