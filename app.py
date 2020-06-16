@@ -32,16 +32,16 @@ server = app.server
 
 pcnt_data = pd.read_csv("percentiles.csv")
 
-default_occs = [
-    'Accountants',
-    'Primary School Teachers',
-    'Secondary School Teachers',
-    'Medical Practitioners',
-    'Solicitors',
-    'Police Bachelor',
-    'Police assoc. diploma',
-    'Registered Nurses',
-]
+# default_occs = [
+#     'Accountants',
+#     'Primary School Teachers',
+#     'Secondary School Teachers',
+#     'Medical Practitioners',
+#     'Solicitors',
+#     'Police Bachelor',
+#     'Police assoc. diploma',
+#     'Registered Nurses',
+# ]
 
 resolutions = [
     [1920, 1080],
@@ -121,7 +121,7 @@ def build_layout(params):
                         apply_default_value(params)(dbc.Checklist)(id='checkbox_occupations',
                                options=[{"label": x, "value": x} for x in
                                         np.sort(pcnt_data['OCCUPATION'].unique())],
-                               value=default_occs,
+                               value=np.sort(pcnt_data['OCCUPATION'].unique()),
                                ),
                     ])
                 ])
