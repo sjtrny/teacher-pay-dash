@@ -58,7 +58,7 @@ scale_options = {
     'Weekly': 1
 }
 
-orca_available = False if which("orca") is None else True
+orca_available = True if which("orca") else False
 
 def build_layout(params):
 
@@ -188,7 +188,8 @@ def figure_dict(percentile, year, scale, occupations):
         )
 
     layout = go.Layout(
-        height=800,
+        height=1080,
+        # width=1920,
         # title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> Full Time Workers in Occupations Holding Bachelor Degrees",
         title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> ACCURATELY DESCRIBE THIS SET OF DATA",
         yaxis={'title': f"{scale} Income"},
@@ -226,53 +227,54 @@ def update_table(**kwargs):
 
     return dbc.Table.from_dataframe(final_data)
 
-@app.callback(
-    Output(component_id="download-button", component_property="href"),
-    [Input(i, "value") for i in component_ids],
-)
-def set_download_link(*values):
-    state = urlencode(dict(zip(component_ids, values)))
-    return f"download/?{state}"
-
-@app.server.route(
-        f"/download/",
-        endpoint=f"serve_clusters",
-)
-def serve_clusters():
-
-    inputs = []
-    for x in component_ids:
-        original = flask.request.args[x]
-
-        try:
-            val = ast.literal_eval(original)
-        except Exception:
-            val = original
-
-        inputs.append(val)
-
-    input_dict = dict(zip(component_ids, inputs))
-
-    fig_dict = figure_dict(
-        *[v for k, v in input_dict.items() if k in graph_inputs]
+if orca_available:
+    @app.callback(
+        Output(component_id="download-button", component_property="href"),
+        [Input(i, "value") for i in component_ids],
     )
+    def set_download_link(*values):
+        state = urlencode(dict(zip(component_ids, values)))
+        return f"download/?{state}"
 
-    w, h = resolution_dict[input_dict["download-resolution"]]
-
-    img_bytes = go.Figure(fig_dict).to_image(
-        format=input_dict["download-format"], width=w, height=h
+    @app.server.route(
+            f"/download/",
+            endpoint=f"serve_figure",
     )
+    def serve_figure():
 
-    mem = io.BytesIO()
-    mem.write(img_bytes)
-    mem.seek(0)
+        inputs = []
+        for x in component_ids:
+            original = flask.request.args[x]
 
-    return flask.send_file(
-        mem,
-        attachment_filename=f"plot.{input_dict['download-format']}",
-        as_attachment=True,
-        cache_timeout=0,
-    )
+            try:
+                val = ast.literal_eval(original)
+            except Exception:
+                val = original
+
+            inputs.append(val)
+
+        input_dict = dict(zip(component_ids, inputs))
+
+        fig_dict = figure_dict(
+            *[v for k, v in input_dict.items() if k in graph_inputs]
+        )
+
+        w, h = resolution_dict[input_dict["download-resolution"]]
+
+        img_bytes = go.Figure(fig_dict).to_image(
+            format=input_dict["download-format"], width=w, height=h
+        )
+
+        mem = io.BytesIO()
+        mem.write(img_bytes)
+        mem.seek(0)
+
+        return flask.send_file(
+            mem,
+            attachment_filename=f"plot.{input_dict['download-format']}",
+            as_attachment=True,
+            cache_timeout=0,
+        )
 
 
 if __name__ == '__main__':
