@@ -74,6 +74,7 @@ def build_layout(params):
                     id="download-resolution",
                     options=resolution_options,
                     value=1920,
+                    clearable=False,
                 ),
             ], width=2),
             dbc.Col([
@@ -85,7 +86,8 @@ def build_layout(params):
                     ] if orca_available else [
                         {"label": "PNG", "value": "png"},
                     ],
-                    value="png"
+                    value="png",
+                    clearable=False,
                 ),
             ], width=2),
             dbc.Col([
