@@ -231,7 +231,7 @@ def update_table(**kwargs):
 
     final_data = pd.concat(lines, axis=0)
 
-    return dbc.Table.from_dataframe(final_data)
+    return dbc.Table.from_dataframe(final_data.round(2))
 
 
 @app.callback(
