@@ -197,7 +197,7 @@ def figure_dict(percentile, year, scale, occupations):
     layout = go.Layout(
         height=800,
         # title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> Full Time Workers in Occupations Holding Bachelor Degrees",
-        title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> ACCURATELY DESCRIBE THIS SET OF DATA",
+        title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile",
         yaxis={'title': f"{scale} Income"},
         xaxis={'title': "Age Group (AGE10P)"}
     )
