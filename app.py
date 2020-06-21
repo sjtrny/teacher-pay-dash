@@ -154,13 +154,13 @@ app.layout = html.Div([
 
 ])
 
-component_ids = [
-    "dropdown_percentile",
-    "dropdown_year",
-    "dropdown_scale",
-    "checkbox_occupations",
-    "download-resolution",
-    "download-format",
+components = [
+    Input("dropdown_percentile", "value"),
+    Input("store_year", "data"),
+    Input("dropdown_scale", "value"),
+    Input("checkbox_occupations", "value"),
+    Input("download-resolution", "value"),
+    Input("download-format", "value"),
 ]
 
 graph_inputs = [
@@ -183,10 +183,12 @@ def page_load(href):
 
 @app.callback(
     Output("url", "search"),
-    inputs=[Input(i, "value") for i in component_ids],
+    inputs=components,
 )
-def update_url_state(*values):
-    state = urlencode(dict(zip(component_ids, values)))
+# Add dash kward arg here
+@dash_kwarg(components)
+def update_url_state(**kwargs):
+    state = urlencode(kwargs)
     return f"?{state}"
 
 
@@ -210,7 +212,7 @@ def figure_dict(percentile, year, scale, occupations):
     layout = go.Layout(
         height=800,
         # title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> Full Time Workers in Occupations Holding Bachelor Degrees",
-        title=f"Estimated Annual Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
+        title=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
         yaxis={'title': f"{scale} Income (Estimated)"},
         xaxis={'title': "Age Group (AGE10P)"},
         showlegend=True,
@@ -299,10 +301,11 @@ def update_table(**kwargs):
 
 @app.callback(
     Output(component_id="download-button", component_property="href"),
-    [Input(i, "value") for i in component_ids],
+    components,
 )
-def set_download_link(*values):
-    state = urlencode(dict(zip(component_ids, values)))
+@dash_kwarg(components)
+def set_download_link(**kwargs):
+    state = urlencode(kwargs)
     return f"download/?{state}"
 
 
@@ -312,6 +315,10 @@ def set_download_link(*values):
 )
 def serve_figure():
     inputs = []
+
+    component_ids = [x.component_id for x in components]
+    graph_input_ids = [x.component_id for x in graph_inputs]
+
     for x in component_ids:
         original = flask.request.args[x]
 
@@ -325,7 +332,7 @@ def serve_figure():
     input_dict = dict(zip(component_ids, inputs))
 
     fig_dict = figure_dict(
-        *[v for k, v in input_dict.items() if k in graph_inputs]
+        *[v for k, v in input_dict.items() if k in graph_input_ids]
     )
 
     w, h = resolution_dict[input_dict["download-resolution"]]
