@@ -70,6 +70,7 @@ def build_layout(params):
             id='confirm',
             message='Changing years will reset occupation selections to default values. Are you sure you want to continue?',
         ),
+        html.Hr(),
         dbc.Row([
             dbc.Col([
                 apply_default_value(params)(dcc.Dropdown)(
