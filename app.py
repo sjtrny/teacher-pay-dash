@@ -1,8 +1,9 @@
 import ast
 import io
-from urllib.parse import urlencode
 from shutil import which
+from urllib.parse import urlencode
 
+import chart_studio
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
@@ -12,12 +13,11 @@ import inflect
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
-from dash.dependencies import Input, Output
+from chart_studio.plotly import image
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 from dash_util import parse_state, apply_default_value, dash_kwarg
-
-import chart_studio
-from chart_studio.plotly import image
 
 chart_studio.tools.set_credentials_file(username='sjtrny', api_key='ElnyL3o3mKjqV61xlSHV')
 
@@ -26,12 +26,8 @@ p = inflect.engine()
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "NSW Teacher Pay"
 server = app.server
-# from util import get_percentiles
 
-# clean_data = pd.read_csv("../CLEAN_DATA.csv")
-# pcnt_data = get_percentiles(clean_data)
-
-pcnt_data = pd.read_csv("percentiles.csv")
+pcnt_data = pd.read_csv("data/percentiles.csv")
 
 resolutions = [
     [1920, 1080],
@@ -52,11 +48,28 @@ scale_options = {
     'Weekly': 1
 }
 
+occs_2016 = pcnt_data.query("YEAR == 2016")['OCCP4D'].unique()
+
+occs_default_selected = [
+    'Secondary School Teachers',
+    'Primary School Teachers',
+    'Accountants',
+    'Solicitors',
+    'Police',
+    'Management and Organisation Analysts',
+    'Registered Nurses'
+]
+
 orca_available = True if which("orca") else False
 
-def build_layout(params):
 
+def build_layout(params):
     return html.Div([
+        dcc.Store(id='store_year', data=2016 if 'dropdown_year' not in params else params['dropdown_year']),
+        dcc.ConfirmDialog(
+            id='confirm',
+            message='Changing years will reset occupation selections to default values. Are you sure you want to continue?',
+        ),
         dbc.Row([
             dbc.Col([
                 apply_default_value(params)(dcc.Dropdown)(
@@ -95,31 +108,37 @@ def build_layout(params):
                     dbc.FormGroup([
                         dbc.Label("Percentile"),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_percentile', value=80, clearable=False,
-                                     options=[{"label": x, "value": x} for x in pcnt_data['PERCENTILE'].unique()]),
-                    ]),
-                    dbc.FormGroup([
-                        dbc.Label("Year"),
-                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_year', value=pcnt_data['YEAR'].unique()[0], clearable=False,
-                                     options=[{"label": x, "value": x} for x in pcnt_data['YEAR'].unique()]),
+                                                                  options=[{"label": x, "value": x} for x in
+                                                                           pcnt_data['PERCENTILE'].unique()]),
                     ]),
                     dbc.FormGroup([
                         dbc.Label("Scale"),
-                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_scale', value=list(scale_options.keys())[0], clearable=False,
-                                     options=[{"label": x, "value": x} for x in scale_options.keys()]),
+                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_scale',
+                                                                  value=list(scale_options.keys())[0], clearable=False,
+                                                                  options=[{"label": x, "value": x} for x in
+                                                                           scale_options.keys()]),
+                    ]),
+                    dbc.FormGroup([
+                        dbc.Label("Year"),
+                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_year',
+                                                                  value=pcnt_data['YEAR'].unique()[0], clearable=False,
+                                                                  options=[{"label": x, "value": x} for x in
+                                                                           pcnt_data['YEAR'].unique()]),
                     ]),
                     dbc.FormGroup([
                         dbc.Label("Occupations"),
                         apply_default_value(params)(dbc.Checklist)(id='checkbox_occupations',
-                               options=[{"label": x, "value": x} for x in
-                                        np.sort(pcnt_data['OCCUPATION'].unique())],
-                               value=np.sort(pcnt_data['OCCUPATION'].unique()),
-                               ),
+                                                                   options=[{"label": x, "value": x} for x in
+                                                                            np.sort(occs_2016)],
+                                                                   value=occs_default_selected,
+                                                                   ),
                     ])
                 ])
             ], width=4),
             dbc.Col(id="table", width=8),
         ]),
     ])
+
 
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
@@ -145,11 +164,12 @@ component_ids = [
 ]
 
 graph_inputs = [
-    "dropdown_percentile",
-    "dropdown_year",
-    "dropdown_scale",
-    "checkbox_occupations",
+    Input("dropdown_percentile", "value"),
+    Input("store_year", "data"),
+    Input("dropdown_scale", "value"),
+    Input("checkbox_occupations", "value"),
 ]
+
 
 @app.callback(
     Output("page-layout", "children"), inputs=[Input("url", "href")],
@@ -160,6 +180,7 @@ def page_load(href):
     state = parse_state(href)
     return build_layout(state)
 
+
 @app.callback(
     Output("url", "search"),
     inputs=[Input(i, "value") for i in component_ids],
@@ -168,18 +189,19 @@ def update_url_state(*values):
     state = urlencode(dict(zip(component_ids, values)))
     return f"?{state}"
 
-def figure_dict(percentile, year, scale, occupations):
 
+def figure_dict(percentile, year, scale, occupations):
     plot_list = []
 
     occs = np.sort(occupations)
 
     for occ in occs:
-        line_data = pcnt_data.query(f"PERCENTILE == {percentile} and OCCUPATION == '{occ}' and YEAR == {year}").sort_values("AGE_GROUP")
+        line_data = pcnt_data.query(f"PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}").sort_values(
+            "AGE10P")
 
         plot_list.append(
             go.Scatter(
-                x=line_data['AGE_GROUP'],
+                x=line_data['AGE10P'],
                 y=line_data['PERCENTILE_VALUE'] * scale_options[scale],
                 name=occ
             )
@@ -188,9 +210,11 @@ def figure_dict(percentile, year, scale, occupations):
     layout = go.Layout(
         height=800,
         # title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> Full Time Workers in Occupations Holding Bachelor Degrees",
-        title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile",
-        yaxis={'title': f"{scale} Income"},
-        xaxis={'title': "Age Group (AGE10P)"}
+        title=f"Estimated Annual Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
+        yaxis={'title': f"{scale} Income (Estimated)"},
+        xaxis={'title': "Age Group (AGE10P)"},
+        showlegend=True,
+        legend_title_text="Occupation (4-digit)"
     )
 
     return {
@@ -198,26 +222,74 @@ def figure_dict(percentile, year, scale, occupations):
         "layout": layout
     }
 
+
 @app.callback(
     Output(component_id='graph', component_property='figure'),
-    inputs=[Input(i, "value") for i in graph_inputs],
+    inputs=graph_inputs,
 )
 def update_graph(*args):
     return figure_dict(*args)
 
+
+@app.callback(Output('confirm', 'displayed'),
+              inputs=[Input('dropdown_year', 'value')],
+              state=[State('store_year', 'data')],
+              prevent_initial_call=True)
+def display_confirm(dropdown_year, store_year):
+    if dropdown_year != store_year:
+        return True
+
+    return False
+
+
+@app.callback(
+    output=[
+        Output(component_id='checkbox_occupations', component_property='options'),
+        Output(component_id='checkbox_occupations', component_property='value'),
+        Output(component_id='store_year', component_property='data')
+    ],
+    # inputs=[Input(i, "value") for i in ['dropdown_year']],
+    inputs=[Input('confirm', "submit_n_clicks")],
+    state=[State('dropdown_year', 'value')],
+    prevent_initial_call=True
+)
+@dash_kwarg([Input('confirm', "submit_n_clicks")] + [State('dropdown_year', 'value')])
+def year_change(**kwargs):
+    if kwargs['confirm']:
+        occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
+
+        return [{"label": x, "value": x} for x in np.sort(occupations)], \
+               occs_default_selected, \
+               kwargs['dropdown_year']
+
+    raise PreventUpdate
+
+
+@app.callback(
+    output=Output(component_id='dropdown_year', component_property='value'),
+    inputs=[Input('confirm', "cancel_n_clicks")],
+    state=[State('store_year', 'data')],
+    prevent_initial_call=True
+)
+@dash_kwarg([Input('confirm', "cancel_n_clicks")] + [State('store_year', 'data')])
+def year_cancel(**kwargs):
+    return kwargs['store_year']
+
+
 @app.callback(
     Output(component_id='table', component_property='children'),
-    inputs=[Input(i, "value") for i in graph_inputs],
+    inputs=graph_inputs,
 )
-@dash_kwarg([Input(i, "value") for i in graph_inputs])
+@dash_kwarg(graph_inputs)
 def update_table(**kwargs):
-
     occs = np.sort(kwargs['checkbox_occupations'])
 
     lines = []
 
     for occ in occs:
-        line_data = pcnt_data.query(f"PERCENTILE == {kwargs['dropdown_percentile']} and OCCUPATION == '{occ}' and YEAR == {kwargs['dropdown_year']}").sort_values("AGE_GROUP")
+        line_data = pcnt_data.query(
+            f"PERCENTILE == {kwargs['dropdown_percentile']} and OCCP4D == '{occ}' and YEAR == {kwargs['store_year']}").sort_values(
+            "AGE10P")
         lines.append(line_data)
 
     final_data = pd.concat(lines, axis=0)
@@ -233,12 +305,12 @@ def set_download_link(*values):
     state = urlencode(dict(zip(component_ids, values)))
     return f"download/?{state}"
 
+
 @app.server.route(
-        f"/download/",
-        endpoint=f"serve_figure",
+    f"/download/",
+    endpoint=f"serve_figure",
 )
 def serve_figure():
-
     inputs = []
     for x in component_ids:
         original = flask.request.args[x]
@@ -263,7 +335,7 @@ def serve_figure():
             format=input_dict["download-format"], width=w, height=h
         )
     else:
-        img_bytes = image.get(fig_dict, format = input_dict["download-format"], width = w, height = h)
+        img_bytes = image.get(fig_dict, format=input_dict["download-format"], width=w, height=h)
 
     mem = io.BytesIO()
     mem.write(img_bytes)

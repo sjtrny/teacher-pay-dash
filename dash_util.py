@@ -1,6 +1,6 @@
 import ast
-from urllib.parse import urlparse, parse_qsl
 from functools import wraps
+from urllib.parse import urlparse, parse_qsl
 
 
 def dash_kwarg(inputs, extra_args={}):
