@@ -1,5 +1,6 @@
 import ast
 import io
+import itertools
 from shutil import which
 from urllib.parse import urlencode
 
@@ -10,10 +11,11 @@ import dash_core_components as dcc
 import dash_html_components as html
 import flask
 import inflect
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
-from chart_studio.plotly import image
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
@@ -28,20 +30,6 @@ app.title = "NSW Teacher Pay"
 server = app.server
 
 pcnt_data = pd.read_csv("data/percentiles.csv")
-
-resolutions = [
-    [1920, 1080],
-    [2560, 1440],
-    [3840, 2160],
-    [5120, 2880],
-    [7680, 4320],
-]
-
-resolution_dict = {r[0]: r for r in resolutions}
-
-resolution_options = [
-    {"label": f"{res[0]} x {res[1]}", "value": res[0]} for res in resolutions
-]
 
 scale_options = {
     'Annual': 52,
@@ -73,34 +61,13 @@ def build_layout(params):
         html.Hr(),
         dbc.Row([
             dbc.Col([
-                apply_default_value(params)(dcc.Dropdown)(
-                    id="download-resolution",
-                    options=resolution_options,
-                    value=1920,
-                    clearable=False,
-                ),
-            ], width=2),
-            dbc.Col([
-                apply_default_value(params)(dcc.Dropdown)(
-                    id="download-format",
-                    options=[
-                        {"label": "PDF", "value": "pdf"},
-                        {"label": "PNG", "value": "png"},
-                    ] if orca_available else [
-                        {"label": "PNG", "value": "png"},
-                    ],
-                    value="png",
-                    clearable=False,
-                ),
-            ], width=2),
-            dbc.Col([
                 html.A(
                     id="download-button",
-                    children=dbc.Button("Download Plot"),
+                    children=dbc.Button("Download"),
                     href="#",
                     style={"fontSize": 18},
                 ),
-            ], width=2)
+            ], width={'size': 2, 'offset': 10})
         ]),
         html.Hr(),
         dbc.Row([
@@ -160,8 +127,6 @@ components = [
     Input("store_year", "data"),
     Input("dropdown_scale", "value"),
     Input("checkbox_occupations", "value"),
-    Input("download-resolution", "value"),
-    Input("download-format", "value"),
 ]
 
 graph_inputs = [
@@ -310,6 +275,48 @@ def set_download_link(**kwargs):
     return f"download/?{state}"
 
 
+def matplot_figure(percentile, year, scale, occupations):
+    marker = itertools.cycle((',', '+', '.', 'o', '*'))
+
+    fig = plt.figure(figsize=(12, 7), dpi=300)
+    ax = plt.gca()
+
+    for occ in occupations:
+        line_data = pcnt_data.query(f"PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}") \
+            .sort_values("AGE10P")
+
+        plt.plot(
+            line_data['AGE10P'],
+            line_data['PERCENTILE_VALUE'] * scale_options[scale],
+            marker=next(marker),
+            label=occ
+        )
+
+    tick = mtick.StrMethodFormatter('${x:,.0f}')
+    ax.yaxis.set_major_formatter(tick)
+
+    plt.legend(
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.1),
+        fontsize=6,
+        frameon=False,
+        ncol=4
+    )
+
+    ax.set_ylabel(f"{scale} Income (Estimated)", fontsize=7, rotation=0, ha='left')
+    ax.yaxis.set_label_coords(-0.13, 1.02)
+
+    # remove left/right margin
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    ax.tick_params(axis=u'y', which=u'both', length=0)
+
+    plt.grid(which='major', axis='y')
+
+    return fig
+
+
 @app.server.route(
     f"/download/",
     endpoint=f"serve_figure",
@@ -332,26 +339,18 @@ def serve_figure():
 
     input_dict = dict(zip(component_ids, inputs))
 
-    fig_dict = figure_dict(
+    fig = matplot_figure(
         *[v for k, v in input_dict.items() if k in graph_input_ids]
     )
 
-    w, h = resolution_dict[input_dict["download-resolution"]]
-
-    if orca_available:
-        img_bytes = go.Figure(fig_dict).to_image(
-            format=input_dict["download-format"], width=w, height=h
-        )
-    else:
-        img_bytes = image.get(fig_dict, format=input_dict["download-format"], width=w, height=h)
-
     mem = io.BytesIO()
-    mem.write(img_bytes)
+
+    fig.savefig(mem, format='pdf', dpi=300, bbox_inches="tight")
     mem.seek(0)
 
     return flask.send_file(
         mem,
-        attachment_filename=f"plot.{input_dict['download-format']}",
+        attachment_filename=f"plot.pdf",
         as_attachment=True,
         cache_timeout=0,
     )

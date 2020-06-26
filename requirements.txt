@@ -13,3 +13,4 @@ scikit-learn
 xlrd
 requests
 inflect
+matplotlib
