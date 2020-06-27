@@ -56,26 +56,26 @@ class InverseCDFSmoother(BaseEstimator, RegressorMixin):
 
 
 column_mapping_2016 = {
-    'LFHRP Labour Force Status and Hours Worked Not Stated': "LFHRP",
     'OCCP - 4 Digit Level': "OCCP4D",
     'INCP Total Personal Income (weekly)': "INCP",
     'AGE10P - Age in Ten Year Groups': "AGE10P",
+    'STATE (POW)': "STATE",
     'Unnamed: 4': "COUNT"
 }
 
 column_mapping_2011 = {
-    'LFHRP Labour Force Status and Hours Worked Not Stated': "LFHRP",
     'OCCP Occupation': "OCCP4D",
     'INCP Total Personal Income (weekly)': "INCP",
     'AGE10P  Age in Ten Year Groups': "AGE10P",
+    'Main Statistical Area Structure (Main ASGS) (POW)': "STATE",
     'Unnamed: 4': "COUNT"
 }
 
 column_mapping_2006 = {
-    'LFSP Labour Force Status': "LFHRP",
     'OCC06P Occupation 06 (ANZSCO)': "OCCP4D",
     'INCP Individual Income (gross weekly)': "INCP",
     'AGEP Age (10 Year Groups)': "AGE10P",
+    'Main ASGC': 'STATE',
     'Unnamed: 4': "COUNT"
 }
 
@@ -149,7 +149,7 @@ incp_high_mapping_2006 = {
 def process_census_data(filepath, column_mapping, incp_low_mapping, incp_high_mapping):
     data = pd.read_csv(filepath,
                        index_col=False,
-                       usecols=[0, 1, 2, 3, 4],
+                       usecols=[0, 1, 2, 3, 4, 5, 6],
                        skiprows=10, skipfooter=8,
                        engine='python')
 
@@ -157,7 +157,6 @@ def process_census_data(filepath, column_mapping, incp_low_mapping, incp_high_ma
 
     data = data.fillna(method='ffill')
 
-    data = data[~data['LFHRP'].isin(['Total'])]
     data = data[~data['OCCP4D'].isin(['Inadequately described', 'Not stated', 'Not applicable', 'Total'])]
     data = data[~data['AGE10P'].isin(['Total'])]
 

@@ -41,11 +41,11 @@ occs_2016 = pcnt_data.query("YEAR == 2016")['OCCP4D'].unique()
 occs_default_selected = [
     'Secondary School Teachers',
     'Primary School Teachers',
-    'Accountants',
-    'Solicitors',
-    'Police',
-    'Management and Organisation Analysts',
-    'Registered Nurses'
+    # 'Accountants',
+    # 'Solicitors',
+    # 'Police',
+    # 'Management and Organisation Analysts',
+    # 'Registered Nurses'
 ]
 
 orca_available = True if which("orca") else False
@@ -63,7 +63,7 @@ def build_layout(params):
             dbc.Col([
                 html.A(
                     id="download-button",
-                    children=dbc.Button("Download"),
+                    children=dbc.Button("Download", color='primary'),
                     href="#",
                     style={"fontSize": 18},
                 ),
@@ -73,6 +73,13 @@ def build_layout(params):
         dbc.Row([
             dbc.Col([
                 dbc.Form([
+                    dbc.FormGroup([
+                        dbc.Label("State"),
+                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_state', value="Total", clearable=False,
+                                                                  options=[{"label": x, "value": x} for x in
+                                                                           pcnt_data['STATE'].unique()]),
+                    ]),
+
                     dbc.FormGroup([
                         dbc.Label("Percentile"),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_percentile', value=80, clearable=False,
@@ -95,6 +102,7 @@ def build_layout(params):
                     ]),
                     dbc.FormGroup([
                         dbc.Label("Occupations"),
+                        dbc.Button(id="button_clear", children="Clear Occupations", color='danger', size='sm', block=True, style={'margin-bottom': '8px'}),
                         apply_default_value(params)(dbc.Checklist)(id='checkbox_occupations',
                                                                    options=[{"label": x, "value": x} for x in
                                                                             np.sort(occs_2016)],
@@ -123,6 +131,7 @@ app.layout = html.Div([
 ])
 
 components = [
+    Input("dropdown_state", "value"),
     Input("dropdown_percentile", "value"),
     Input("store_year", "data"),
     Input("dropdown_scale", "value"),
@@ -130,6 +139,7 @@ components = [
 ]
 
 graph_inputs = [
+    Input("dropdown_state", "value"),
     Input("dropdown_percentile", "value"),
     Input("store_year", "data"),
     Input("dropdown_scale", "value"),
@@ -158,13 +168,13 @@ def update_url_state(**kwargs):
     return f"?{state}"
 
 
-def figure_dict(percentile, year, scale, occupations):
+def figure_dict(state, percentile, year, scale, occupations):
     plot_list = []
 
     occs = np.sort(occupations)
 
     for occ in occs:
-        line_data = pcnt_data.query(f"PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}").sort_values(
+        line_data = pcnt_data.query(f"STATE == '{state}' and PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}").sort_values(
             "AGE10P")
 
         plot_list.append(
@@ -217,18 +227,33 @@ def display_confirm(dropdown_year, store_year):
         Output(component_id='store_year', component_property='data')
     ],
     # inputs=[Input(i, "value") for i in ['dropdown_year']],
-    inputs=[Input('confirm', "submit_n_clicks")],
+    inputs=[
+        Input('confirm', "submit_n_clicks"),
+        Input('button_clear', "n_clicks"),
+    ],
     state=[State('dropdown_year', 'value')],
     prevent_initial_call=True
 )
-@dash_kwarg([Input('confirm', "submit_n_clicks")] + [State('dropdown_year', 'value')])
+@dash_kwarg([Input('confirm', "submit_n_clicks"), Input('button_clear', "n_clicks")] + [State('dropdown_year', 'value')])
 def year_change(**kwargs):
-    if kwargs['confirm']:
+
+    ctx = dash.callback_context
+
+    if ctx.triggered:
+
+        changed_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
         occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
 
+        if changed_id == 'confirm':
+            new_selected_occs = occs_default_selected
+        else:
+            new_selected_occs = []
+
         return [{"label": x, "value": x} for x in np.sort(occupations)], \
-               occs_default_selected, \
+               new_selected_occs, \
                kwargs['dropdown_year']
+
 
     raise PreventUpdate
 
@@ -243,7 +268,6 @@ def year_change(**kwargs):
 def year_cancel(**kwargs):
     return kwargs['store_year']
 
-
 @app.callback(
     Output(component_id='table', component_property='children'),
     inputs=graph_inputs,
@@ -252,17 +276,21 @@ def year_cancel(**kwargs):
 def update_table(**kwargs):
     occs = np.sort(kwargs['checkbox_occupations'])
 
-    lines = []
+    if len(occs) > 0:
 
-    for occ in occs:
-        line_data = pcnt_data.query(
-            f"PERCENTILE == {kwargs['dropdown_percentile']} and OCCP4D == '{occ}' and YEAR == {kwargs['store_year']}").sort_values(
-            "AGE10P")
-        lines.append(line_data)
+        lines = []
 
-    final_data = pd.concat(lines, axis=0)
+        for occ in occs:
+            line_data = pcnt_data.query(
+                f"STATE == '{kwargs['dropdown_state']}' and PERCENTILE == {kwargs['dropdown_percentile']} and OCCP4D == '{occ}' and YEAR == {kwargs['store_year']}").sort_values(
+                "AGE10P")
+            lines.append(line_data)
 
-    return dbc.Table.from_dataframe(final_data.round(2))
+        final_data = pd.concat(lines, axis=0)
+
+        return dbc.Table.from_dataframe(final_data.round(2))
+
+    return dbc.Table.from_dataframe(pd.DataFrame())
 
 
 @app.callback(
@@ -275,14 +303,14 @@ def set_download_link(**kwargs):
     return f"download/?{state}"
 
 
-def matplot_figure(percentile, year, scale, occupations):
+def matplot_figure(state, percentile, year, scale, occupations):
     marker = itertools.cycle((',', '+', '.', 'o', '*'))
 
     fig = plt.figure(figsize=(12, 7), dpi=300)
     ax = plt.gca()
 
     for occ in occupations:
-        line_data = pcnt_data.query(f"PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}") \
+        line_data = pcnt_data.query(f"STATE == '{state}' and PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}") \
             .sort_values("AGE10P")
 
         plt.plot(
