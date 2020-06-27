@@ -208,33 +208,34 @@ def figure_dict(state, percentile, year, scale, occupations):
 def update_graph(*args):
     return figure_dict(*args)
 
-
-@app.callback(Output('confirm', 'displayed'),
-              inputs=[Input('dropdown_year', 'value')],
-              state=[State('store_year', 'data')],
-              prevent_initial_call=True)
-def display_confirm(dropdown_year, store_year):
-    if dropdown_year != store_year:
-        return True
-
-    return False
-
-
 @app.callback(
     output=[
+        Output('confirm', 'displayed'),
+        Output('confirm', 'message'),
         Output(component_id='checkbox_occupations', component_property='options'),
         Output(component_id='checkbox_occupations', component_property='value'),
         Output(component_id='store_year', component_property='data')
     ],
-    # inputs=[Input(i, "value") for i in ['dropdown_year']],
     inputs=[
+        Input('dropdown_year', 'value'),
         Input('confirm', "submit_n_clicks"),
         Input('button_clear', "n_clicks"),
     ],
-    state=[State('dropdown_year', 'value')],
+    state=[
+        State('store_year', 'data'),
+        State('checkbox_occupations', 'value')
+    ],
     prevent_initial_call=True
 )
-@dash_kwarg([Input('confirm', "submit_n_clicks"), Input('button_clear', "n_clicks")] + [State('dropdown_year', 'value')])
+@dash_kwarg(
+    [
+        Input('dropdown_year', 'value'),
+        Input('confirm', "submit_n_clicks"),
+        Input('button_clear', "n_clicks"),
+        State('store_year', 'value'),
+        State('checkbox_occupations', 'value')
+    ]
+)
 def year_change(**kwargs):
 
     ctx = dash.callback_context
@@ -243,17 +244,32 @@ def year_change(**kwargs):
 
         changed_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-        occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
+        # First the year dropdown gets changed
+        if changed_id == 'dropdown_year':
+            if kwargs['dropdown_year'] != kwargs['store_year']:
 
-        if changed_id == 'confirm':
-            new_selected_occs = occs_default_selected
-        else:
-            new_selected_occs = []
+                # Check if changing years will cause issues with occupations
+                occs_selected_set = set(kwargs['checkbox_occupations'])
+                occs_year_set = set(pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique())
 
-        return [{"label": x, "value": x} for x in np.sort(occupations)], \
-               new_selected_occs, \
-               kwargs['dropdown_year']
+                if occs_selected_set.issubset(occs_year_set):
 
+                    occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
+
+                    return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], kwargs['checkbox_occupations'], kwargs['dropdown_year']
+
+                occupations = pcnt_data.query(f"YEAR == {kwargs['store_year']}")['OCCP4D'].unique()
+
+                return True, "Changing years will reset occupation selections to default values. Are you sure you want to continue?", \
+                        [{"label": x, "value": x} for x in np.sort(occupations)], kwargs['checkbox_occupations'], kwargs[
+                            'store_year']
+
+        elif changed_id == 'confirm':
+            occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
+            return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], occs_default_selected, kwargs['dropdown_year']
+        elif changed_id == 'button_clear':
+            occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
+            return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], [], kwargs['dropdown_year']
 
     raise PreventUpdate
 
