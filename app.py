@@ -304,6 +304,24 @@ def update_table(**kwargs):
 
         final_data = pd.concat(lines, axis=0)
 
+        final_data = final_data.rename(columns={
+            'PERCENTILE': 'Percentile',
+            'PERCENTILE_VALUE': 'Income',
+            'YEAR': 'Year',
+            'OCCP4D': 'Occupation',
+            'AGE10P': 'Age',
+            'STATE': 'State'
+        })
+
+        final_data = final_data[[
+            "Income",
+            "Age",
+            "Occupation",
+            "State",
+            "Year",
+            "Percentile"
+        ]]
+
         return dbc.Table.from_dataframe(final_data.round(2))
 
     return dbc.Table.from_dataframe(pd.DataFrame())
