@@ -158,7 +158,7 @@ app.layout = html.Div([
                     id='graph',
                     config={
                         'displayModeBar': False,
-                        'staticPlot': True,
+                        'staticPlot': False,
                         'responsive': True,
                     }
                 ),
@@ -227,7 +227,8 @@ def figure_dict(state, percentile, year, scale, occupations):
     layout = go.Layout(
         height=800,
         title=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
-        yaxis={'title': f"{scale} Income (Estimated)"},
+        yaxis={'title': f"{scale} Income (Estimated)",'fixedrange':True},
+        xaxis={'fixedrange': True},
         legend=dict(orientation="h", title_text="Occupation", title_side="top"),
     )
 
