@@ -56,18 +56,6 @@ def build_layout(params):
             message='Changing years will reset occupation selections to default values. Are you sure you want to continue?',
         ),
         html.Hr(),
-        dbc.Row([
-            dbc.Col([
-                html.A(
-                    id="download-button",
-                    children=dbc.Button("Download Plot", color='primary', size='sm'),
-                    href="#",
-                    style={"fontSize": 18},
-                    className='float-right',
-                ),
-            ], width={'size': 2, 'offset': 10})
-        ]),
-        html.Hr(),
         dbc.Form([
             dbc.Row([
                 dbc.Col([
@@ -238,12 +226,10 @@ def figure_dict(state, percentile, year, scale, occupations):
 
     layout = go.Layout(
         height=800,
-        # title=f"{year} Estimate of Annual Income of {p.ordinal(percentile)} Percentile<br> Full Time Workers in Occupations Holding Bachelor Degrees",
         title=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
         yaxis={'title': f"{scale} Income (Estimated)"},
-        xaxis={'title': "Age Group (AGE10P)"},
-        showlegend=True,
-        legend_title_text="Occupation (4-digit)"
+        xaxis={'title': "Age Group"},
+        legend=dict(orientation="h"),
     )
 
     return {
@@ -332,56 +318,6 @@ def year_change(**kwargs):
 def year_cancel(**kwargs):
     return kwargs['store_year']
 
-@app.callback(
-    Output(component_id="download-button", component_property="href"),
-    components,
-)
-@dash_kwarg(components)
-def set_download_link(**kwargs):
-    state = urlencode(kwargs)
-    return f"download/?{state}"
-
-
-def matplot_figure(state, percentile, year, scale, occupations):
-    marker = itertools.cycle((',', '+', '.', 'o', '*'))
-
-    fig = plt.figure(figsize=(12, 7), dpi=300)
-    ax = plt.gca()
-
-    for occ in occupations:
-        line_data = pcnt_data.query(f"STATE == '{state}' and PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}") \
-            .sort_values("AGE10P")
-
-        plt.plot(
-            line_data['AGE10P'],
-            line_data['PERCENTILE_VALUE'] * scale_options[scale],
-            marker=next(marker),
-            label=occ
-        )
-
-    tick = mtick.StrMethodFormatter('${x:,.0f}')
-    ax.yaxis.set_major_formatter(tick)
-
-    plt.legend(
-        loc='upper center',
-        bbox_to_anchor=(0.5, -0.1),
-        fontsize=6,
-        frameon=False,
-        ncol=4
-    )
-
-    ax.set_ylabel(f"{scale} Income (Estimated)", fontsize=7, rotation=0, ha='left')
-    ax.yaxis.set_label_coords(-0.13, 1.02)
-
-    # remove left/right margin
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-
-    ax.tick_params(axis=u'y', which=u'both', length=0)
-
-    plt.grid(which='major', axis='y')
-
-    return fig
 
 
 @app.server.route(
