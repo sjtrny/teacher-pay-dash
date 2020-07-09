@@ -4,7 +4,6 @@ import itertools
 from shutil import which
 from urllib.parse import urlencode
 
-import chart_studio
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
@@ -20,8 +19,6 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from dash_util import parse_state, apply_default_value, dash_kwarg
-
-chart_studio.tools.set_credentials_file(username='sjtrny', api_key='ElnyL3o3mKjqV61xlSHV')
 
 p = inflect.engine()
 
@@ -63,29 +60,52 @@ def build_layout(params):
             dbc.Col([
                 html.A(
                     id="download-button",
-                    children=dbc.Button("Download", color='primary'),
+                    children=dbc.Button("Download Plot", color='primary', size='sm'),
                     href="#",
                     style={"fontSize": 18},
+                    className='float-right',
                 ),
             ], width={'size': 2, 'offset': 10})
         ]),
         html.Hr(),
-        dbc.Row([
-            dbc.Col([
-                dbc.Form([
+        dbc.Form([
+            dbc.Row([
+                dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("State"),
-                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_state', value="Total", clearable=False,
+                        dbc.Label("Occupations"),
+                        apply_default_value(params)(dcc.Dropdown)(id='checkbox_occupations',
                                                                   options=[{"label": x, "value": x} for x in
-                                                                           pcnt_data['STATE'].unique()]),
-                    ]),
+                                                                           np.sort(occs_2016)],
+                                                                  value=occs_default_selected,
+                                                                  multi=True,
+                                                                  ),
 
+
+                    ]),
+                ], width=9),
+                dbc.Col([
+                    dbc.Button(id="button_reset", children="Reset Occupations", color='danger', size='sm', className='float-right align-text-bottom', style={'margin-top': '32px'})
+                ], width=3),
+            ]),
+            dbc.Row([
+                dbc.Col([
                     dbc.FormGroup([
                         dbc.Label("Percentile"),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_percentile', value=80, clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
-                                                                           pcnt_data['PERCENTILE'].unique()]),
-                    ]),
+                                                                           np.arange(10, 100, 10)]),
+                    ])
+                ], width=2),
+                dbc.Col([
+                    dbc.FormGroup([
+                        dbc.Label("Year"),
+                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_year',
+                                                                  value=pcnt_data['YEAR'].unique()[0], clearable=False,
+                                                                  options=[{"label": x, "value": x} for x in
+                                                                           pcnt_data['YEAR'].unique()]),
+                    ])
+                ], width=2),
+                dbc.Col([
                     dbc.FormGroup([
                         dbc.Label("Scale"),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_scale',
@@ -93,27 +113,52 @@ def build_layout(params):
                                                                   options=[{"label": x, "value": x} for x in
                                                                            scale_options.keys()]),
                     ]),
+                ], width=2),
+                dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("Year"),
-                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_year',
-                                                                  value=pcnt_data['YEAR'].unique()[0], clearable=False,
+                        dbc.Label("State"),
+                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_state', value="Total", clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
-                                                                           pcnt_data['YEAR'].unique()]),
-                    ]),
-                    dbc.FormGroup([
-                        dbc.Label("Occupations"),
-                        dbc.Button(id="button_clear", children="Clear Occupations", color='danger', size='sm', block=True, style={'margin-bottom': '8px'}),
-                        apply_default_value(params)(dbc.Checklist)(id='checkbox_occupations',
-                                                                   options=[{"label": x, "value": x} for x in
-                                                                            np.sort(occs_2016)],
-                                                                   value=occs_default_selected,
-                                                                   ),
+                                                                           pcnt_data['STATE'].unique()]),
                     ])
-                ])
-            ], width=4),
-            dbc.Col(id="table", width=8),
+                ], width=6),
+
+            ]),
         ]),
-    ])
+        html.Hr(),
+        dbc.Row([
+            dbc.Col([
+                dcc.Markdown(
+                    '''
+                    ## About
+                    
+                    This dashboard was developed as part of the "*NSW Teachers’
+                    Pay: How it has changed and how it compares*" report.
+
+                    This report was prepared for the Commission of Inquiry into
+                    Work Value of NSW Public School Teachers by the NSW
+                    Teachers Federation.
+                    
+                    ## Authors
+                    
+                    Professor John Buchanan (corresponding author)  
+                    Dr Huon Curtis  
+                    Ron Callus  
+                    Dr Stephen Tierney (programming)
+                    
+                    ## Source and Data
+                    
+                    https://github.com/sjtrny/teacher_pay_dash
+                    
+                    ## Acknowledgements
+                    
+                    This project was funded by the NSW Teachers’ Federation.
+                    '''
+
+                )
+            ], width=6)
+        ]),
+    ], style={'margin-bottom': '250px'})
 
 
 app.layout = html.Div([
@@ -121,13 +166,19 @@ app.layout = html.Div([
     dbc.Container([
         dbc.Row([
             dbc.Col([
-                dcc.Graph(id='graph'),
+                dcc.Graph(
+                    id='graph',
+                    config={
+                        'displayModeBar': False,
+                        'staticPlot': True,
+                        'responsive': True,
+                    }
+                ),
 
             ], width=12)
         ]),
         html.Div(id="page-layout", children=build_layout([])),
     ])
-
 ])
 
 components = [
@@ -219,7 +270,7 @@ def update_graph(*args):
     inputs=[
         Input('dropdown_year', 'value'),
         Input('confirm', "submit_n_clicks"),
-        Input('button_clear', "n_clicks"),
+        Input('button_reset', "n_clicks"),
     ],
     state=[
         State('store_year', 'data'),
@@ -231,7 +282,7 @@ def update_graph(*args):
     [
         Input('dropdown_year', 'value'),
         Input('confirm', "submit_n_clicks"),
-        Input('button_clear', "n_clicks"),
+        Input('button_reset', "n_clicks"),
         State('store_year', 'value'),
         State('checkbox_occupations', 'value')
     ]
@@ -264,12 +315,9 @@ def year_change(**kwargs):
                         [{"label": x, "value": x} for x in np.sort(occupations)], kwargs['checkbox_occupations'], kwargs[
                             'store_year']
 
-        elif changed_id == 'confirm':
+        elif changed_id == 'confirm' or changed_id == 'button_reset':
             occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
             return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], occs_default_selected, kwargs['dropdown_year']
-        elif changed_id == 'button_clear':
-            occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
-            return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], [], kwargs['dropdown_year']
 
     raise PreventUpdate
 
@@ -283,49 +331,6 @@ def year_change(**kwargs):
 @dash_kwarg([Input('confirm', "cancel_n_clicks")] + [State('store_year', 'data')])
 def year_cancel(**kwargs):
     return kwargs['store_year']
-
-@app.callback(
-    Output(component_id='table', component_property='children'),
-    inputs=graph_inputs,
-)
-@dash_kwarg(graph_inputs)
-def update_table(**kwargs):
-    occs = np.sort(kwargs['checkbox_occupations'])
-
-    if len(occs) > 0:
-
-        lines = []
-
-        for occ in occs:
-            line_data = pcnt_data.query(
-                f"STATE == '{kwargs['dropdown_state']}' and PERCENTILE == {kwargs['dropdown_percentile']} and OCCP4D == '{occ}' and YEAR == {kwargs['store_year']}").sort_values(
-                "AGE10P")
-            lines.append(line_data)
-
-        final_data = pd.concat(lines, axis=0)
-
-        final_data = final_data.rename(columns={
-            'PERCENTILE': 'Percentile',
-            'PERCENTILE_VALUE': 'Income',
-            'YEAR': 'Year',
-            'OCCP4D': 'Occupation',
-            'AGE10P': 'Age',
-            'STATE': 'State'
-        })
-
-        final_data = final_data[[
-            "Income",
-            "Age",
-            "Occupation",
-            "State",
-            "Year",
-            "Percentile"
-        ]]
-
-        return dbc.Table.from_dataframe(final_data.round(2))
-
-    return dbc.Table.from_dataframe(pd.DataFrame())
-
 
 @app.callback(
     Output(component_id="download-button", component_property="href"),
@@ -401,22 +406,27 @@ def serve_figure():
 
     input_dict = dict(zip(component_ids, inputs))
 
-    fig = matplot_figure(
+    fig_dict = figure_dict(
         *[v for k, v in input_dict.items() if k in graph_input_ids]
     )
 
-    mem = io.BytesIO()
+    w, h = 1440, 960
+    format = 'png'
 
-    fig.savefig(mem, format='pdf', dpi=300, bbox_inches="tight")
+    img_bytes = go.Figure(fig_dict).to_image(
+        format=format, width=w, height=h, scale=1,
+    )
+
+    mem = io.BytesIO()
+    mem.write(img_bytes)
     mem.seek(0)
 
     return flask.send_file(
         mem,
-        attachment_filename=f"plot.pdf",
+        attachment_filename=f"plot.{format}",
         as_attachment=True,
         cache_timeout=0,
     )
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
