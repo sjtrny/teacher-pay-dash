@@ -118,7 +118,7 @@ def build_layout(params):
             dbc.Col([
                 dcc.Markdown(
                     '''
-                    ## About
+                    ### About
                     
                     This dashboard was developed as part of the "*NSW Teachers’
                     Pay: How it has changed and how it compares*" report.
@@ -127,18 +127,18 @@ def build_layout(params):
                     Work Value of NSW Public School Teachers by the NSW
                     Teachers Federation.
                     
-                    ## Authors
+                    ### Authors
                     
                     Professor John Buchanan (corresponding author)  
                     Dr Huon Curtis  
                     Ron Callus  
-                    Dr Stephen Tierney (programming)
+                    Dr Stephen Tierney (programming and statistical analysis)
                     
-                    ## Source and Data
+                    ### Source and Data
                     
                     https://github.com/sjtrny/teacher_pay_dash
                     
-                    ## Acknowledgements
+                    ### Acknowledgements
                     
                     This project was funded by the NSW Teachers’ Federation.
                     '''
@@ -228,8 +228,7 @@ def figure_dict(state, percentile, year, scale, occupations):
         height=800,
         title=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
         yaxis={'title': f"{scale} Income (Estimated)"},
-        xaxis={'title': "Age Group"},
-        legend=dict(orientation="h"),
+        legend=dict(orientation="h", title_text="Occupation", title_side="top"),
     )
 
     return {
@@ -346,7 +345,7 @@ def serve_figure():
         *[v for k, v in input_dict.items() if k in graph_input_ids]
     )
 
-    w, h = 1440, 960
+    w, h = 800, 600
     format = 'png'
 
     img_bytes = go.Figure(fig_dict).to_image(
@@ -365,4 +364,4 @@ def serve_figure():
     )
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, host='0.0.0.0')
