@@ -66,7 +66,7 @@ def build_layout(params):
             dbc.Row([
                 dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("Occupations"),
+                        dbc.Label("Occupations", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='checkbox_occupations',
                                                                   options=[{"label": x, "value": x} for x in
                                                                            np.sort(occs_2016)],
@@ -84,7 +84,7 @@ def build_layout(params):
             dbc.Row([
                 dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("Percentile"),
+                        dbc.Label("Percentile", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_percentile', value=80, clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
                                                                            np.arange(10, 100, 10)]),
@@ -92,7 +92,7 @@ def build_layout(params):
                 ], width=2),
                 dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("Year"),
+                        dbc.Label("Year", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_year',
                                                                   value=pcnt_data['YEAR'].unique()[0], clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
@@ -101,7 +101,7 @@ def build_layout(params):
                 ], width=2),
                 dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("Scale"),
+                        dbc.Label("Scale", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_scale',
                                                                   value=list(scale_options.keys())[0], clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
@@ -110,7 +110,7 @@ def build_layout(params):
                 ], width=2),
                 dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("State or Territory"),
+                        dbc.Label("State or Territory", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_state', value="All", clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
                                                                            states_australia]),
@@ -124,7 +124,7 @@ def build_layout(params):
             dbc.Col([
                 dcc.Markdown(
                     '''
-                    ### About
+                    #### About
                     
                     This dashboard was developed as part of the "*NSW Teachers’
                     Pay: How it has changed and how it compares*" report.
@@ -133,18 +133,18 @@ def build_layout(params):
                     Work Value of NSW Public School Teachers by the NSW
                     Teachers Federation.
                     
-                    ### Authors
+                    #### Authors
                     
                     Professor John Buchanan (corresponding author)  
                     Dr Huon Curtis  
                     Ron Callus  
                     Dr Stephen Tierney (programming and statistical analysis)
                     
-                    ### Source and Data
+                    #### Source and Data
                     
                     https://github.com/sjtrny/teacher_pay_dash
                     
-                    ### Acknowledgements
+                    #### Acknowledgements
                     
                     This project was funded by the NSW Teachers’ Federation.
                     '''
