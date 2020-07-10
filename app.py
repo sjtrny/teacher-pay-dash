@@ -172,7 +172,7 @@ app.layout = html.Div([
             ], width=12)
         ]),
         html.Div(id="page-layout", children=build_layout([])),
-    ])
+    ], fluid=True)
 ])
 
 components = [
@@ -233,10 +233,13 @@ def figure_dict(state, percentile, year, scale, occupations):
 
     layout = go.Layout(
         height=800,
-        title=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
-        yaxis={'title': f"{scale} Income (Estimated)", 'fixedrange': True},
+        title=dict(
+            text=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
+            font_size=24
+        ),
+        yaxis={'title': f"{scale} Income (Estimated)", "title_font_size": 18, 'fixedrange': True},
         xaxis={'fixedrange': True},
-        legend=dict(orientation="h", title_text="Occupation", title_side="top"),
+        legend=dict(orientation="h", title_text="Occupation", title_side="top", title_font_size=18, font_size=16),
     )
 
     return {
