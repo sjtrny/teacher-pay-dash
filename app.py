@@ -172,7 +172,7 @@ app.layout = html.Div([
             ], width=12)
         ]),
         html.Div(id="page-layout", children=build_layout([])),
-    ], fluid=True)
+    ])
 ])
 
 components = [
