@@ -78,7 +78,7 @@ def build_layout(params):
                 ], width=9),
                 dbc.Col([
                     dbc.Button(id="button_reset", children="Reset Occupations", color='danger', size='sm',
-                               className='float-right align-text-bottom', style={'margin-top': '32px'})
+                               className='float-right align-text-bottom', style={'margin-top': '41px'})
                 ], width=3),
             ]),
             dbc.Row([
