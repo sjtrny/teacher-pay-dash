@@ -1,6 +1,5 @@
 import ast
 import io
-import itertools
 from shutil import which
 from urllib.parse import urlencode
 
@@ -10,8 +9,6 @@ import dash_core_components as dcc
 import dash_html_components as html
 import flask
 import inflect
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
@@ -28,6 +25,20 @@ server = app.server
 
 pcnt_data = pd.read_csv("data/percentiles.csv")
 
+pcnt_data.loc[pcnt_data['STATE'] == "Total", 'STATE'] = "All"
+
+states_australia = [
+    'All',
+    'New South Wales',
+    'Victoria',
+    'Queensland',
+    'Western Australia',
+    'South Australia',
+    'Tasmania',
+    'Australian Capital Territory',
+    'Northern Territory',
+]
+
 scale_options = {
     'Annual': 52,
     'Weekly': 1
@@ -38,11 +49,6 @@ occs_2016 = pcnt_data.query("YEAR == 2016")['OCCP4D'].unique()
 occs_default_selected = [
     'Secondary School Teachers',
     'Primary School Teachers',
-    # 'Accountants',
-    # 'Solicitors',
-    # 'Police',
-    # 'Management and Organisation Analysts',
-    # 'Registered Nurses'
 ]
 
 orca_available = True if which("orca") else False
@@ -68,11 +74,11 @@ def build_layout(params):
                                                                   multi=True,
                                                                   ),
 
-
                     ]),
                 ], width=9),
                 dbc.Col([
-                    dbc.Button(id="button_reset", children="Reset Occupations", color='danger', size='sm', className='float-right align-text-bottom', style={'margin-top': '32px'})
+                    dbc.Button(id="button_reset", children="Reset Occupations", color='danger', size='sm',
+                               className='float-right align-text-bottom', style={'margin-top': '32px'})
                 ], width=3),
             ]),
             dbc.Row([
@@ -104,10 +110,10 @@ def build_layout(params):
                 ], width=2),
                 dbc.Col([
                     dbc.FormGroup([
-                        dbc.Label("State"),
-                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_state', value="Total", clearable=False,
+                        dbc.Label("State or Territory"),
+                        apply_default_value(params)(dcc.Dropdown)(id='dropdown_state', value="All", clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
-                                                                           pcnt_data['STATE'].unique()]),
+                                                                           states_australia]),
                     ])
                 ], width=6),
 
@@ -213,7 +219,8 @@ def figure_dict(state, percentile, year, scale, occupations):
     occs = np.sort(occupations)
 
     for occ in occs:
-        line_data = pcnt_data.query(f"STATE == '{state}' and PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}").sort_values(
+        line_data = pcnt_data.query(
+            f"STATE == '{state}' and PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}").sort_values(
             "AGE10P")
 
         plot_list.append(
@@ -227,7 +234,7 @@ def figure_dict(state, percentile, year, scale, occupations):
     layout = go.Layout(
         height=800,
         title=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
-        yaxis={'title': f"{scale} Income (Estimated)",'fixedrange':True},
+        yaxis={'title': f"{scale} Income (Estimated)", 'fixedrange': True},
         xaxis={'fixedrange': True},
         legend=dict(orientation="h", title_text="Occupation", title_side="top"),
     )
@@ -244,6 +251,7 @@ def figure_dict(state, percentile, year, scale, occupations):
 )
 def update_graph(*args):
     return figure_dict(*args)
+
 
 @app.callback(
     output=[
@@ -274,7 +282,6 @@ def update_graph(*args):
     ]
 )
 def year_change(**kwargs):
-
     ctx = dash.callback_context
 
     if ctx.triggered:
@@ -290,20 +297,21 @@ def year_change(**kwargs):
                 occs_year_set = set(pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique())
 
                 if occs_selected_set.issubset(occs_year_set):
-
                     occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
 
-                    return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], kwargs['checkbox_occupations'], kwargs['dropdown_year']
+                    return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], kwargs[
+                        'checkbox_occupations'], kwargs['dropdown_year']
 
                 occupations = pcnt_data.query(f"YEAR == {kwargs['store_year']}")['OCCP4D'].unique()
 
                 return True, "Changing years will reset occupation selections to default values. Are you sure you want to continue?", \
-                        [{"label": x, "value": x} for x in np.sort(occupations)], kwargs['checkbox_occupations'], kwargs[
-                            'store_year']
+                       [{"label": x, "value": x} for x in np.sort(occupations)], kwargs['checkbox_occupations'], kwargs[
+                           'store_year']
 
         elif changed_id == 'confirm' or changed_id == 'button_reset':
             occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")['OCCP4D'].unique()
-            return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], occs_default_selected, kwargs['dropdown_year']
+            return False, "", [{"label": x, "value": x} for x in np.sort(occupations)], occs_default_selected, kwargs[
+                'dropdown_year']
 
     raise PreventUpdate
 
@@ -317,7 +325,6 @@ def year_change(**kwargs):
 @dash_kwarg([Input('confirm', "cancel_n_clicks")] + [State('store_year', 'data')])
 def year_cancel(**kwargs):
     return kwargs['store_year']
-
 
 
 @app.server.route(
@@ -363,6 +370,7 @@ def serve_figure():
         as_attachment=True,
         cache_timeout=0,
     )
+
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0')
