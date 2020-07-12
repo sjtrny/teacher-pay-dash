@@ -131,7 +131,7 @@ def build_layout(params):
                     
                     Values reported are estimates. The estimates
                     are calculated from INCP (Total Personal Income (weekly))
-                    from the census using [Von Hippel et al (2017)][1].
+                    from the census using [Von Hippel et al (2017)](https://sociologicalscience.com/download/vol-4/november/SocSci_v4_641to655.pdf).
                     
                     #### Instructions
                     
@@ -188,12 +188,12 @@ def build_layout(params):
 
                     #### Authors
 
-                    Professor John Buchanan (corresponding author)  
+                    [Professor John Buchanan](https://www.sydney.edu.au/business/about/our-people/academic-staff/john-buchanan.html) (corresponding author)  
                     Dr Huon Curtis  
                     Ron Callus  
-                    Dr Stephen Tierney (programming and statistical analysis)
+                    [Dr Stephen Tierney](https://www.sydney.edu.au/business/about/our-people/academic-staff/stephen-tierney.html) (programming and statistical analysis)
 
-                    [1]: https://sociologicalscience.com/download/vol-4/november/SocSci_v4_641to655.pdf
+                    
 
                     '''
 
