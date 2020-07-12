@@ -126,27 +126,75 @@ def build_layout(params):
                     '''
                     #### About
                     
+                    This tool provides relative comparison of income by
+                    occupation for Australian Full Time Employees.
+                    
+                    Values reported are estimates. The estimates
+                    are calculated from INCP (Total Personal Income (weekly))
+                    from the census using [Von Hippel et al (2017)][1].
+                    
+                    #### Instructions
+                    
+                    Select occupations and adjust the percentile,
+                    year, state or scale to your needs.
+                    
+                    The figure will automatically update when any change is made.
+                    
+                    Changing year may result in losing the currently selected
+                    occupations. This is due to changes in occupational codes
+                    between census years.
+                    
+                    #### Sharing or Saving results
+                    
+                    You can share your figure by copying the current URL. Each
+                    time a change is made the URL will update.
+                    
+                    #### Definitions 
+                    
+                    **Percentile**: The value at which the given percentage of
+                    employees fall below. For example, the 80th percentile
+                    represents the income at which 80% of all employees are below.
+                    
+                    **Year**: Census year
+                    
+                    **Scale**: The scale of the vertical axis, which represents income.
+                    Either weekly or annual.
+                    
+                    **State or Territory**: Which state or territory to estimate
+                    incomes for. Setting to "All" will give estimates for all
+                    of Australia.
+                    
+                    '''
+
+                )
+            ], width=6),
+            dbc.Col([
+                dcc.Markdown(
+                    ''' 
+                    #### Source Code and Data
+
+                    https://github.com/sjtrny/teacher_pay_dash
+
+                    #### Acknowledgements
+
                     This dashboard was developed as part of the "*NSW Teachers’
                     Pay: How it has changed and how it compares*" report.
 
                     This report was prepared for the Commission of Inquiry into
                     Work Value of NSW Public School Teachers by the NSW
                     Teachers Federation.
-                    
+
+                    This project was funded by the NSW Teachers’ Federation.
+
                     #### Authors
-                    
+
                     Professor John Buchanan (corresponding author)  
                     Dr Huon Curtis  
                     Ron Callus  
                     Dr Stephen Tierney (programming and statistical analysis)
-                    
-                    #### Source and Data
-                    
-                    https://github.com/sjtrny/teacher_pay_dash
-                    
-                    #### Acknowledgements
-                    
-                    This project was funded by the NSW Teachers’ Federation.
+
+                    [1]: https://sociologicalscience.com/download/vol-4/november/SocSci_v4_641to655.pdf
+
                     '''
 
                 )
