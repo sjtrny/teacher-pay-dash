@@ -4,9 +4,8 @@ from shutil import which
 from urllib.parse import urlencode
 
 import dash
+from dash import dcc, html
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
-import dash_html_components as html
 import flask
 import inflect
 import numpy as np
@@ -65,7 +64,7 @@ def build_layout(params):
         dbc.Form([
             dbc.Row([
                 dbc.Col([
-                    dbc.FormGroup([
+                    # dbc.FormGroup([
                         dbc.Label("Occupations", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='checkbox_occupations',
                                                                   options=[{"label": x, "value": x} for x in
@@ -74,7 +73,7 @@ def build_layout(params):
                                                                   multi=True,
                                                                   ),
 
-                    ]),
+                    # ]),
                 ], width=9),
                 dbc.Col([
                     dbc.Button(id="button_reset", children="Reset Occupations", color='danger',
@@ -83,38 +82,38 @@ def build_layout(params):
             ]),
             dbc.Row([
                 dbc.Col([
-                    dbc.FormGroup([
+                    # dbc.FormGroup([
                         dbc.Label("Percentile", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_percentile', value=80, clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
                                                                            np.arange(10, 100, 10)]),
-                    ])
+                    # ])
                 ], width=2),
                 dbc.Col([
-                    dbc.FormGroup([
+                    # dbc.FormGroup([
                         dbc.Label("Year", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_year',
                                                                   value=pcnt_data['YEAR'].unique()[0], clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
                                                                            pcnt_data['YEAR'].unique()]),
-                    ])
+                    # ])
                 ], width=2),
                 dbc.Col([
-                    dbc.FormGroup([
+                    # dbc.FormGroup([
                         dbc.Label("Scale", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_scale',
                                                                   value=list(scale_options.keys())[0], clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
                                                                            scale_options.keys()]),
-                    ]),
+                    # ]),
                 ], width=2),
                 dbc.Col([
-                    dbc.FormGroup([
+                    # dbc.FormGroup([
                         dbc.Label("State or Territory", style={'font-size': 22}),
                         apply_default_value(params)(dcc.Dropdown)(id='dropdown_state', value="All", clearable=False,
                                                                   options=[{"label": x, "value": x} for x in
                                                                            states_australia]),
-                    ])
+                    # ])
                 ], width=6),
 
             ]),
@@ -124,53 +123,59 @@ def build_layout(params):
             dbc.Col([
                 dcc.Markdown(
                     '''
-                    #### About
-                    
-                    This tool provides relative comparison of income by
-                    occupation for Australian Full Time Employees.
-                    
-                    Values reported are estimates. The estimates
-                    are calculated from INCP (Total Personal Income (weekly))
-                    from the census using [Von Hippel et al (2017)](https://sociologicalscience.com/download/vol-4/november/SocSci_v4_641to655.pdf).
-                    
                     #### Instructions
-                    
+
                     Select occupations and adjust the percentile,
                     year, state or scale to your needs.
-                    
+
                     The figure will automatically update when any change is made.
-                    
+
                     Changing year may result in losing the currently selected
                     occupations. This is due to changes in occupational codes
                     between census years.
-                    
+
+                    #### About
+
+                    This tool provides relative comparison of income by
+                    occupation for Australian Full Time Employees.
+
+                    Values reported are estimates calculated from INCP (Total Personal Income (weekly))
+                    from the census using [Von Hippel et al (2017)](https://sociologicalscience.com/download/vol-4/november/SocSci_v4_641to655.pdf).
+
                     #### Sharing or Saving results
-                    
+
                     You can share your figure by copying the current URL. Each
                     time a change is made the URL will update.
-                    
-                    #### Definitions 
-                    
+
+                    #### Definitions
+
                     **Percentile**: The value at which the given percentage of
                     employees fall below. For example, the 80th percentile
                     represents the income at which 80% of all employees are below.
-                    
+
                     **Year**: Census year
-                    
+
                     **Scale**: The scale of the vertical axis, which represents income.
                     Either weekly or annual.
-                    
+
                     **State or Territory**: Which state or territory to estimate
                     incomes for. Setting to "All" will give estimates for all
                     of Australia.
-                    
+
                     '''
 
                 )
             ], width=6),
             dbc.Col([
                 dcc.Markdown(
-                    ''' 
+                    '''
+                    #### Authors
+
+                    1. [Professor John Buchanan](https://www.sydney.edu.au/business/about/our-people/academic-staff/john-buchanan.html) (corresponding author)
+                    2. Dr Huon Curtis
+                    3. Ron Callus
+                    4. [Dr Stephen Tierney](https://www.sydney.edu.au/business/about/our-people/academic-staff/stephen-tierney.html) (statistical analysis, visuals, programming)
+
                     #### Source Code and Data
 
                     https://github.com/sjtrny/teacher_pay_dash
@@ -185,16 +190,6 @@ def build_layout(params):
                     Teachers Federation.
 
                     This project was funded by the NSW Teachers’ Federation.
-
-                    #### Authors
-
-                    [Professor John Buchanan](https://www.sydney.edu.au/business/about/our-people/academic-staff/john-buchanan.html) (corresponding author)  
-                    Dr Huon Curtis  
-                    Ron Callus  
-                    [Dr Stephen Tierney](https://www.sydney.edu.au/business/about/our-people/academic-staff/stephen-tierney.html) (programming and statistical analysis)
-
-                    
-
                     '''
 
                 )
@@ -424,4 +419,4 @@ def serve_figure():
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host='0.0.0.0')
+    app.run_server(debug=True)
