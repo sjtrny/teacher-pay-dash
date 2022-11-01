@@ -153,6 +153,9 @@ def process_census_data(filepath, column_mapping, incp_low_mapping, incp_high_ma
             ["Inadequately described", "Not stated", "Not applicable", "Total"]
         )
     ]
+
+    data["STATE"] = data["STATE"].replace("Total", "All")
+
     data = data[~data["AGE10P"].isin(["Total"])]
 
     data["INCP_LOW"] = data["INCP"].apply(lambda x: incp_low_mapping[x])
