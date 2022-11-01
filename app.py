@@ -13,6 +13,7 @@ import plotly.graph_objs as go
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
+from functools import cache
 
 from app_util import apply_default_value, dash_kwarg, parse_state
 
@@ -22,9 +23,26 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "NSW Teacher Pay"
 server = app.server
 
-pcnt_data = pd.read_csv("data/percentiles.csv")
 
-pcnt_data.loc[pcnt_data["STATE"] == "Total", "STATE"] = "All"
+from process_data import *
+
+data_2021 = process_census_data("data/teacher_pay_2021.csv", column_mapping_2021, incp_low_mapping_2021, incp_high_mapping_2021)
+data_2021["YEAR"] = 2021
+
+data_2016 = process_census_data("data/teacher_pay_2016.csv", column_mapping_2016, incp_low_mapping_2016, incp_high_mapping_2016)
+data_2016["YEAR"] = 2016
+
+data_2011 = process_census_data("data/teacher_pay_2011.csv", column_mapping_2011, incp_low_mapping_2011, incp_high_mapping_2011)
+data_2011["YEAR"] = 2011
+
+data_2006 = process_census_data("data/teacher_pay_2006.csv", column_mapping_2006, incp_low_mapping_2006, incp_high_mapping_2006)
+data_2006["YEAR"] = 2006
+
+data = pd.concat([data_2021, data_2016, data_2011, data_2006], axis=0)
+combinations = data[["OCCP4D", "AGE10P", "STATE", "YEAR"]].drop_duplicates()
+
+# pcnt_data = pd.read_csv("data/percentiles.csv")
+# pcnt_data.loc[pcnt_data["STATE"] == "Total", "STATE"] = "All"
 
 states_australia = [
     "All",
@@ -40,7 +58,11 @@ states_australia = [
 
 scale_options = {"Annual": 52, "Weekly": 1}
 
-occs_2016 = pcnt_data.query("YEAR == 2016")["OCCP4D"].unique()
+# latest_year = pcnt_data["YEAR"].max()
+latest_year = 2021
+
+# occs_latest = pcnt_data.query(f"YEAR == {latest_year}")["OCCP4D"].unique()
+occs_latest = data.query(f"YEAR == {latest_year}")["OCCP4D"].unique()
 
 occs_default_selected = [
     "Secondary School Teachers",
@@ -55,7 +77,9 @@ def build_layout(params):
         [
             dcc.Store(
                 id="store_year",
-                data=2016 if "dropdown_year" not in params else params["dropdown_year"],
+                data=latest_year
+                if "dropdown_year" not in params
+                else params["dropdown_year"],
             ),
             dcc.ConfirmDialog(
                 id="confirm",
@@ -74,7 +98,7 @@ def build_layout(params):
                                         id="checkbox_occupations",
                                         options=[
                                             {"label": x, "value": x}
-                                            for x in np.sort(occs_2016)
+                                            for x in np.sort(occs_latest)
                                         ],
                                         value=occs_default_selected,
                                         multi=True,
@@ -122,12 +146,14 @@ def build_layout(params):
                                     dbc.Label("Year", style={"font-size": 22}),
                                     apply_default_value(params)(dcc.Dropdown)(
                                         id="dropdown_year",
-                                        value=pcnt_data["YEAR"].unique()[0],
+                                        # value=pcnt_data["YEAR"].unique()[0],
+                                        value=2021,
                                         clearable=False,
-                                        options=[
-                                            {"label": x, "value": x}
-                                            for x in pcnt_data["YEAR"].unique()
-                                        ],
+                                        # options=[
+                                        #     {"label": x, "value": x}
+                                        #     for x in pcnt_data["YEAR"].unique()
+                                        # ],
+                                        options = [2021]
                                     ),
                                     # ])
                                 ],
@@ -327,16 +353,70 @@ def update_url_state(**kwargs):
     state = urlencode(kwargs)
     return f"?{state}"
 
+@cache
+def get_pcntiles(state, year, occupation):
+    pcntile_range = np.arange(0, 101, 10).reshape(-1, 1) / 100
+
+    combins = combinations.query(f"STATE == 'New South Wales' and OCCP4D == '{occupation}' and YEAR == {year}")
+    results = []
+    for idx, row in combins.iterrows():
+        print("test")
+        year = row["YEAR"]
+        occ = row["OCCP4D"]
+        age_group = row["AGE10P"]
+        state = row["STATE"]
+        subset = data.query(
+            f"OCCP4D == '{occ}' and AGE10P == '{age_group}' and STATE == '{state}' and YEAR == {year}"
+        )
+        subset = subset.sort_values("INCP_HIGH", ascending=True)
+
+        # If the subset has no observations then fill with 0
+        if subset["COUNT"].sum() > 0:
+            edges = subset["INCP_HIGH"].values
+            counts = subset["COUNT"].values
+
+            # Collapse zeros
+            idx = counts != 0
+            edges = edges[idx]
+            counts = counts[idx]
+            edges = np.concatenate(([0], edges))
+            counts = np.concatenate(([0], counts))
+
+            bs = BinSmooth()
+            bs.fit(
+                edges,
+                counts,
+                includes_tail=True,
+            )
+
+            pcntile_vals = bs.inv_cdf(pcntile_range)
+        else:
+            pcntile_vals = np.full(pcntile_range.shape, 0)
+
+        result = pd.concat(
+            [
+                pd.Series((pcntile_range.squeeze() * 100).astype(int), name="PERCENTILE"),
+                pd.Series(pcntile_vals.squeeze().round(4), name="PERCENTILE_VALUE"),
+            ],
+            axis=1,
+        )
+
+        result["YEAR"] = year
+        result["OCCP4D"] = occ
+        result["AGE10P"] = age_group
+        result["STATE"] = state
+
+        results.append(result)
+
+    return pd.concat(results, axis=0)
 
 def figure_dict(state, percentile, year, scale, occupations):
     plot_list = []
-
     occs = np.sort(occupations)
 
     for occ in occs:
-        line_data = pcnt_data.query(
-            f"STATE == '{state}' and PERCENTILE == {percentile} and OCCP4D == '{occ}' and YEAR == {year}"
-        ).sort_values("AGE10P")
+
+        line_data = get_pcntiles(state, year, occ).query(f"PERCENTILE == {percentile}").sort_values("AGE10P")
 
         plot_list.append(
             go.Scatter(
@@ -439,9 +519,11 @@ def year_change(**kwargs):
                     "OCCP4D"
                 ].unique()
 
+                message = f"The currently selected occupations are not available for {kwargs['dropdown_year']}.\n\n Changing years will reset occupation selections to default values. Are you sure you want to continue?"
+
                 return (
                     True,
-                    "Changing years will reset occupation selections to default values. Are you sure you want to continue?",
+                    message,
                     [{"label": x, "value": x} for x in np.sort(occupations)],
                     kwargs["checkbox_occupations"],
                     kwargs["store_year"],
