@@ -1,5 +1,6 @@
 import ast
 import io
+from functools import lru_cache
 from shutil import which
 from urllib.parse import urlencode
 
@@ -13,9 +14,9 @@ import plotly.graph_objs as go
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-from functools import cache
 
 from app_util import apply_default_value, dash_kwarg, parse_state
+from process_data import *
 
 p = inflect.engine()
 
@@ -23,26 +24,40 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "NSW Teacher Pay"
 server = app.server
 
-
-from process_data import *
-
-data_2021 = process_census_data("data/teacher_pay_2021.csv", column_mapping_2021, incp_low_mapping_2021, incp_high_mapping_2021)
+data_2021 = process_census_data(
+    "data/teacher_pay_2021.csv",
+    column_mapping_2021,
+    incp_low_mapping_2021,
+    incp_high_mapping_2021,
+)
 data_2021["YEAR"] = 2021
 
-data_2016 = process_census_data("data/teacher_pay_2016.csv", column_mapping_2016, incp_low_mapping_2016, incp_high_mapping_2016)
+data_2016 = process_census_data(
+    "data/teacher_pay_2016.csv",
+    column_mapping_2016,
+    incp_low_mapping_2016,
+    incp_high_mapping_2016,
+)
 data_2016["YEAR"] = 2016
 
-data_2011 = process_census_data("data/teacher_pay_2011.csv", column_mapping_2011, incp_low_mapping_2011, incp_high_mapping_2011)
+data_2011 = process_census_data(
+    "data/teacher_pay_2011.csv",
+    column_mapping_2011,
+    incp_low_mapping_2011,
+    incp_high_mapping_2011,
+)
 data_2011["YEAR"] = 2011
 
-data_2006 = process_census_data("data/teacher_pay_2006.csv", column_mapping_2006, incp_low_mapping_2006, incp_high_mapping_2006)
+data_2006 = process_census_data(
+    "data/teacher_pay_2006.csv",
+    column_mapping_2006,
+    incp_low_mapping_2006,
+    incp_high_mapping_2006,
+)
 data_2006["YEAR"] = 2006
 
 data = pd.concat([data_2021, data_2016, data_2011, data_2006], axis=0)
 combinations = data[["OCCP4D", "AGE10P", "STATE", "YEAR"]].drop_duplicates()
-
-# pcnt_data = pd.read_csv("data/percentiles.csv")
-# pcnt_data.loc[pcnt_data["STATE"] == "Total", "STATE"] = "All"
 
 states_australia = [
     "All",
@@ -58,10 +73,9 @@ states_australia = [
 
 scale_options = {"Annual": 52, "Weekly": 1}
 
-# latest_year = pcnt_data["YEAR"].max()
-latest_year = 2021
+years = pd.Series(combinations["YEAR"].unique()).sort_values(ascending=False)
+latest_year = combinations["YEAR"].iloc[0]
 
-# occs_latest = pcnt_data.query(f"YEAR == {latest_year}")["OCCP4D"].unique()
 occs_latest = data.query(f"YEAR == {latest_year}")["OCCP4D"].unique()
 
 occs_default_selected = [
@@ -146,14 +160,11 @@ def build_layout(params):
                                     dbc.Label("Year", style={"font-size": 22}),
                                     apply_default_value(params)(dcc.Dropdown)(
                                         id="dropdown_year",
-                                        # value=pcnt_data["YEAR"].unique()[0],
-                                        value=2021,
+                                        value=latest_year,
                                         clearable=False,
-                                        # options=[
-                                        #     {"label": x, "value": x}
-                                        #     for x in pcnt_data["YEAR"].unique()
-                                        # ],
-                                        options = [2021]
+                                        options=[
+                                            {"label": x, "value": x} for x in years
+                                        ],
                                     ),
                                     # ])
                                 ],
@@ -353,14 +364,16 @@ def update_url_state(**kwargs):
     state = urlencode(kwargs)
     return f"?{state}"
 
-@cache
+
+@lru_cache(maxsize=128)
 def get_pcntiles(state, year, occupation):
     pcntile_range = np.arange(0, 101, 10).reshape(-1, 1) / 100
 
-    combins = combinations.query(f"STATE == 'New South Wales' and OCCP4D == '{occupation}' and YEAR == {year}")
+    combins = combinations.query(
+        f"STATE == '{state}' and OCCP4D == '{occupation}' and YEAR == {year}"
+    )
     results = []
     for idx, row in combins.iterrows():
-        print("test")
         year = row["YEAR"]
         occ = row["OCCP4D"]
         age_group = row["AGE10P"]
@@ -395,7 +408,9 @@ def get_pcntiles(state, year, occupation):
 
         result = pd.concat(
             [
-                pd.Series((pcntile_range.squeeze() * 100).astype(int), name="PERCENTILE"),
+                pd.Series(
+                    (pcntile_range.squeeze() * 100).astype(int), name="PERCENTILE"
+                ),
                 pd.Series(pcntile_vals.squeeze().round(4), name="PERCENTILE_VALUE"),
             ],
             axis=1,
@@ -410,13 +425,18 @@ def get_pcntiles(state, year, occupation):
 
     return pd.concat(results, axis=0)
 
+
 def figure_dict(state, percentile, year, scale, occupations):
     plot_list = []
     occs = np.sort(occupations)
 
     for occ in occs:
 
-        line_data = get_pcntiles(state, year, occ).query(f"PERCENTILE == {percentile}").sort_values("AGE10P")
+        line_data = (
+            get_pcntiles(state, year, occ)
+            .query(f"PERCENTILE == {percentile}")
+            .sort_values("AGE10P")
+        )
 
         plot_list.append(
             go.Scatter(
@@ -497,15 +517,15 @@ def year_change(**kwargs):
                 # Check if changing years will cause issues with occupations
                 occs_selected_set = set(kwargs["checkbox_occupations"])
                 occs_year_set = set(
-                    pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")[
+                    combinations.query(f"YEAR == {kwargs['dropdown_year']}")[
                         "OCCP4D"
                     ].unique()
                 )
 
                 if occs_selected_set.issubset(occs_year_set):
-                    occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")[
-                        "OCCP4D"
-                    ].unique()
+                    occupations = combinations.query(
+                        f"YEAR == {kwargs['dropdown_year']}"
+                    )["OCCP4D"].unique()
 
                     return (
                         False,
@@ -515,7 +535,7 @@ def year_change(**kwargs):
                         kwargs["dropdown_year"],
                     )
 
-                occupations = pcnt_data.query(f"YEAR == {kwargs['store_year']}")[
+                occupations = combinations.query(f"YEAR == {kwargs['store_year']}")[
                     "OCCP4D"
                 ].unique()
 
@@ -530,7 +550,7 @@ def year_change(**kwargs):
                 )
 
         elif changed_id == "confirm" or changed_id == "button_reset":
-            occupations = pcnt_data.query(f"YEAR == {kwargs['dropdown_year']}")[
+            occupations = combinations.query(f"YEAR == {kwargs['dropdown_year']}")[
                 "OCCP4D"
             ].unique()
             return (
