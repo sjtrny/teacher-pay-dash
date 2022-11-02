@@ -281,7 +281,7 @@ app.layout = html.Div(
         ),
         dbc.NavbarSimple(
             children=[
-                dbc.NavItem(dbc.NavLink("About", href="#about")),
+                dbc.NavItem(html.A("About", href="#about", className="nav-link")),
             ],
             brand="Teacher Pay Dashboard",
             brand_href="#",
@@ -306,7 +306,6 @@ app.layout = html.Div(
                                                 dbc.Button(
                                                     id="button_download",
                                                     children="Download",
-                                                    # color="danger",
                                                 ),
                                                 dcc.Download(id="download_plot"),
                                             ],
