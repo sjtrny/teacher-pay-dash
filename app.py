@@ -109,6 +109,9 @@ instructions = dbc.Row(
         You can share your figure by copying the current URL. Each
         time a change is made the URL will update.
 
+        Alternatively you may download an image of the current plot by
+        clicking the Download button.
+
         #### Definitions
 
         **Percentile**: The value at which the given percentage of
