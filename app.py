@@ -66,7 +66,7 @@ states_australia = [
 scale_options = {"Annual": 52, "Weekly": 1}
 
 years = pd.Series(combinations["YEAR"].unique()).sort_values(ascending=True)
-latest_year = combinations["YEAR"].iloc[-1]
+latest_year = combinations["YEAR"].iloc[0]
 
 occs_latest = data.query(f"YEAR == {latest_year}")["OCCP4D"].unique()
 
@@ -183,6 +183,8 @@ def build_layout(params):
                             id="button_reset",
                             children="Reset",
                             color="danger",
+                            href="/",
+                            external_link=True,
                         ),
                     ],
                     className="d-flex justify-content-between align-items-center",
@@ -502,7 +504,6 @@ def update_graph(*args):
     inputs=[
         Input("dropdown_year", "value"),
         Input("confirm", "submit_n_clicks"),
-        Input("button_reset", "n_clicks"),
     ],
     state=[State("store_year", "data"), State("checkbox_occupations", "value")],
     prevent_initial_call=True,
@@ -511,7 +512,6 @@ def update_graph(*args):
     [
         Input("dropdown_year", "value"),
         Input("confirm", "submit_n_clicks"),
-        Input("button_reset", "n_clicks"),
         State("store_year", "value"),
         State("checkbox_occupations", "value"),
     ]
@@ -562,7 +562,7 @@ def year_change(**kwargs):
                     kwargs["store_year"],
                 )
 
-        elif changed_id == "confirm" or changed_id == "button_reset":
+        elif changed_id == "confirm":
             occupations = combinations.query(f"YEAR == {kwargs['dropdown_year']}")[
                 "OCCP4D"
             ].unique()
@@ -586,6 +586,7 @@ def year_change(**kwargs):
 @dash_kwarg([Input("confirm", "cancel_n_clicks")] + [State("store_year", "data")])
 def year_cancel(**kwargs):
     return kwargs["store_year"]
+
 
 
 @app.callback(
