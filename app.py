@@ -8,8 +8,7 @@ import inflect
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
-from dash import dcc, html
-from dash.dependencies import Input, Output, State
+from dash import Input, Output, State, ctx, dcc, html
 from dash.exceptions import PreventUpdate
 
 from app_util import apply_default_value, dash_kwarg, parse_state
@@ -80,6 +79,89 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "NSW Teacher Pay"
 server = app.server
 
+instructions = dbc.Row(
+    [
+        dbc.Col(
+            [
+                dcc.Markdown(
+                    """
+        #### Instructions
+
+        Select occupations and adjust the percentile,
+        year, state or scale to your needs.
+
+        The figure will automatically update when any change is made.
+
+        Changing year may result in losing the currently selected
+        occupations. This is due to changes in occupational codes
+        between census years.
+
+        #### About
+
+        This tool provides relative comparison of income by
+        occupation for Australian Full Time Employees.
+
+        Values reported are estimates calculated from INCP (Total Personal Income (weekly))
+        from the census using [Von Hippel et al (2017)](https://sociologicalscience.com/download/vol-4/november/SocSci_v4_641to655.pdf).
+
+        #### Sharing or Saving results
+
+        You can share your figure by copying the current URL. Each
+        time a change is made the URL will update.
+
+        #### Definitions
+
+        **Percentile**: The value at which the given percentage of
+        employees fall below. For example, the 80th percentile
+        represents the income at which 80% of all employees are below.
+
+        **Year**: Census year
+
+        **Scale**: The scale of the vertical axis, which represents income.
+        Either weekly or annual.
+
+        **State or Territory**: Which state or territory to estimate
+        incomes for. Setting to "All" will give estimates for all
+        of Australia.
+
+        """
+                )
+            ],
+            width=6,
+        ),
+        dbc.Col(
+            [
+                dcc.Markdown(
+                    """
+        #### Authors
+
+        1. [Professor John Buchanan](https://www.sydney.edu.au/business/about/our-people/academic-staff/john-buchanan.html) (corresponding author)
+        2. Dr Huon Curtis
+        3. Ron Callus
+        4. [Dr Stephen Tierney](https://www.sydney.edu.au/business/about/our-people/academic-staff/stephen-tierney.html) (statistical analysis, visuals, programming)
+
+        #### Source Code and Data
+
+        https://github.com/sjtrny/teacher_pay_dash
+
+        #### Acknowledgements
+
+        This dashboard was developed as part of the "*NSW Teachers’
+        Pay: How it has changed and how it compares*" report.
+
+        This report was prepared for the Commission of Inquiry into
+        Work Value of NSW Public School Teachers by the NSW
+        Teachers Federation.
+
+        This project was funded by the NSW Teachers’ Federation.
+        """
+                )
+            ],
+            width=6,
+        ),
+    ]
+)
+
 
 def build_layout(params):
     return html.Div(
@@ -90,10 +172,6 @@ def build_layout(params):
                 if "dropdown_year" not in params
                 else params["dropdown_year"],
             ),
-            dcc.ConfirmDialog(
-                id="confirm",
-                message="Changing years will reset occupation selections to default values. Are you sure you want to continue?",
-            ),
             html.Hr(),
             dbc.Form(
                 [
@@ -101,7 +179,6 @@ def build_layout(params):
                         [
                             dbc.Col(
                                 [
-                                    # dbc.FormGroup([
                                     dbc.Label("Occupations", style={"font-size": 22}),
                                     apply_default_value(params)(dcc.Dropdown)(
                                         id="checkbox_occupations",
@@ -112,7 +189,6 @@ def build_layout(params):
                                         value=occs_default_selected,
                                         multi=True,
                                     ),
-                                    # ]),
                                 ],
                                 width=9,
                             ),
@@ -134,7 +210,6 @@ def build_layout(params):
                         [
                             dbc.Col(
                                 [
-                                    # dbc.FormGroup([
                                     dbc.Label("Percentile", style={"font-size": 22}),
                                     apply_default_value(params)(dcc.Dropdown)(
                                         id="dropdown_percentile",
@@ -145,13 +220,11 @@ def build_layout(params):
                                             for x in np.arange(10, 100, 10)
                                         ],
                                     ),
-                                    # ])
                                 ],
                                 width=2,
                             ),
                             dbc.Col(
                                 [
-                                    # dbc.FormGroup([
                                     dbc.Label("Year", style={"font-size": 22}),
                                     apply_default_value(params)(dcc.Dropdown)(
                                         id="dropdown_year",
@@ -161,13 +234,11 @@ def build_layout(params):
                                             {"label": x, "value": x} for x in years
                                         ],
                                     ),
-                                    # ])
                                 ],
                                 width=2,
                             ),
                             dbc.Col(
                                 [
-                                    # dbc.FormGroup([
                                     dbc.Label("Scale", style={"font-size": 22}),
                                     apply_default_value(params)(dcc.Dropdown)(
                                         id="dropdown_scale",
@@ -178,13 +249,11 @@ def build_layout(params):
                                             for x in scale_options.keys()
                                         ],
                                     ),
-                                    # ]),
                                 ],
                                 width=2,
                             ),
                             dbc.Col(
                                 [
-                                    # dbc.FormGroup([
                                     dbc.Label(
                                         "State or Territory", style={"font-size": 22}
                                     ),
@@ -197,120 +266,39 @@ def build_layout(params):
                                             for x in states_australia
                                         ],
                                     ),
-                                    # ])
                                 ],
                                 width=6,
                             ),
                         ]
                     ),
-                ]
-            ),
-            dbc.Row(
-                dbc.Col(
-                    [
-                        dbc.Button(
-                            id="button_download",
-                            children="Download Plot",
-                            # color="danger",
-                            className="float-right align-text-bottom",
-                            style={"margin-top": "41px"},
-                        ),
-                        dcc.Download(id="download_plot"),
-                    ],
-                    width=4,
-                )
-            ),
-            html.Hr(),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            dcc.Markdown(
-                                """
-                    #### Instructions
-
-                    Select occupations and adjust the percentile,
-                    year, state or scale to your needs.
-
-                    The figure will automatically update when any change is made.
-
-                    Changing year may result in losing the currently selected
-                    occupations. This is due to changes in occupational codes
-                    between census years.
-
-                    #### About
-
-                    This tool provides relative comparison of income by
-                    occupation for Australian Full Time Employees.
-
-                    Values reported are estimates calculated from INCP (Total Personal Income (weekly))
-                    from the census using [Von Hippel et al (2017)](https://sociologicalscience.com/download/vol-4/november/SocSci_v4_641to655.pdf).
-
-                    #### Sharing or Saving results
-
-                    You can share your figure by copying the current URL. Each
-                    time a change is made the URL will update.
-
-                    #### Definitions
-
-                    **Percentile**: The value at which the given percentage of
-                    employees fall below. For example, the 80th percentile
-                    represents the income at which 80% of all employees are below.
-
-                    **Year**: Census year
-
-                    **Scale**: The scale of the vertical axis, which represents income.
-                    Either weekly or annual.
-
-                    **State or Territory**: Which state or territory to estimate
-                    incomes for. Setting to "All" will give estimates for all
-                    of Australia.
-
-                    """
-                            )
-                        ],
-                        width=6,
-                    ),
-                    dbc.Col(
-                        [
-                            dcc.Markdown(
-                                """
-                    #### Authors
-
-                    1. [Professor John Buchanan](https://www.sydney.edu.au/business/about/our-people/academic-staff/john-buchanan.html) (corresponding author)
-                    2. Dr Huon Curtis
-                    3. Ron Callus
-                    4. [Dr Stephen Tierney](https://www.sydney.edu.au/business/about/our-people/academic-staff/stephen-tierney.html) (statistical analysis, visuals, programming)
-
-                    #### Source Code and Data
-
-                    https://github.com/sjtrny/teacher_pay_dash
-
-                    #### Acknowledgements
-
-                    This dashboard was developed as part of the "*NSW Teachers’
-                    Pay: How it has changed and how it compares*" report.
-
-                    This report was prepared for the Commission of Inquiry into
-                    Work Value of NSW Public School Teachers by the NSW
-                    Teachers Federation.
-
-                    This project was funded by the NSW Teachers’ Federation.
-                    """
-                            )
-                        ],
-                        width=6,
+                    dbc.Row(
+                        dbc.Col(
+                            [
+                                dbc.Button(
+                                    id="button_download",
+                                    children="Download Plot",
+                                    # color="danger",
+                                    className="float-right align-text-bottom",
+                                    style={"margin-top": "41px"},
+                                ),
+                                dcc.Download(id="download_plot"),
+                            ],
+                            width=4,
+                        )
                     ),
                 ]
             ),
         ],
-        style={"margin-bottom": "250px"},
     )
 
 
 app.layout = html.Div(
     [
         dcc.Location(id="url", refresh=False),
+        dcc.ConfirmDialog(
+            id="confirm",
+            message="Changing years will reset occupation selections to default values. Are you sure you want to continue?",
+        ),
         dbc.Container(
             [
                 dbc.Row(
@@ -331,26 +319,28 @@ app.layout = html.Div(
                     ]
                 ),
                 html.Div(id="page-layout", children=build_layout([])),
+                html.Div(
+                    [
+                        html.Hr(),
+                        instructions,
+                    ]
+                ),
             ]
         ),
     ]
 )
 
+
 components = [
-    Input("dropdown_state", "value"),
-    Input("dropdown_percentile", "value"),
-    Input("store_year", "data"),
-    Input("dropdown_scale", "value"),
-    Input("checkbox_occupations", "value"),
+    ("dropdown_state", "value"),
+    ("dropdown_percentile", "value"),
+    ("store_year", "data"),
+    ("dropdown_scale", "value"),
+    ("checkbox_occupations", "value"),
 ]
 
-graph_inputs = [
-    Input("dropdown_state", "value"),
-    Input("dropdown_percentile", "value"),
-    Input("store_year", "data"),
-    Input("dropdown_scale", "value"),
-    Input("checkbox_occupations", "value"),
-]
+graph_inputs = [Input(x[0], x[1]) for x in components]
+graph_states = [State(x[0], x[1]) for x in components]
 
 
 @app.callback(
@@ -366,10 +356,10 @@ def page_load(href):
 
 @app.callback(
     Output("url", "search"),
-    inputs=components,
+    inputs=graph_inputs,
 )
 # Add dash kward arg here
-@dash_kwarg(components)
+@dash_kwarg(graph_inputs)
 def update_url_state(**kwargs):
     state = urlencode(kwargs)
     return f"?{state}"
@@ -586,8 +576,10 @@ def year_cancel(**kwargs):
 
 
 @app.callback(
-    Output("download_plot", "data"),
-    inputs=[Input("button_download", "n_clicks")] + graph_inputs,
+    *(
+        [Output("download_plot", "data"), Input("button_download", "n_clicks")]
+        + graph_states
+    ),
     prevent_initial_call=True,
 )
 def download_plot(button_nclicks, *args):
