@@ -167,132 +167,109 @@ instructions = dbc.Row(
 
 
 def build_layout(params):
-    return html.Div(
-        [
-            dcc.Store(
-                id="store_year",
-                data=latest_year
-                if "dropdown_year" not in params
-                else params["dropdown_year"],
-            ),
-            html.Hr(),
-            dbc.Form(
-                [
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                [
-                                    dbc.Label("Occupations", style={"font-size": 22}),
-                                    apply_default_value(params)(dcc.Dropdown)(
-                                        id="checkbox_occupations",
-                                        options=[
-                                            {"label": x, "value": x}
-                                            for x in np.sort(occs_latest)
-                                        ],
-                                        value=occs_default_selected,
-                                        multi=True,
-                                    ),
-                                ],
-                                width=9,
-                            ),
-                            dbc.Col(
-                                [
-                                    dbc.Button(
-                                        id="button_reset",
-                                        children="Reset Occupations",
-                                        color="danger",
-                                        className="float-right align-text-bottom",
-                                        style={"margin-top": "41px"},
-                                    )
-                                ],
-                                width=3,
-                            ),
-                        ]
-                    ),
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                [
-                                    dbc.Label("Percentile", style={"font-size": 22}),
-                                    apply_default_value(params)(dcc.Dropdown)(
-                                        id="dropdown_percentile",
-                                        value=80,
-                                        clearable=False,
-                                        options=[
-                                            {"label": x, "value": x}
-                                            for x in np.arange(10, 100, 10)
-                                        ],
-                                    ),
-                                ],
-                                width=2,
-                            ),
-                            dbc.Col(
-                                [
-                                    dbc.Label("Year", style={"font-size": 22}),
-                                    apply_default_value(params)(dcc.Dropdown)(
-                                        id="dropdown_year",
-                                        value=latest_year,
-                                        clearable=False,
-                                        options=[
-                                            {"label": x, "value": x} for x in years
-                                        ],
-                                    ),
-                                ],
-                                width=2,
-                            ),
-                            dbc.Col(
-                                [
-                                    dbc.Label("Scale", style={"font-size": 22}),
-                                    apply_default_value(params)(dcc.Dropdown)(
-                                        id="dropdown_scale",
-                                        value=list(scale_options.keys())[0],
-                                        clearable=False,
-                                        options=[
-                                            {"label": x, "value": x}
-                                            for x in scale_options.keys()
-                                        ],
-                                    ),
-                                ],
-                                width=2,
-                            ),
-                            dbc.Col(
-                                [
-                                    dbc.Label(
-                                        "State or Territory", style={"font-size": 22}
-                                    ),
-                                    apply_default_value(params)(dcc.Dropdown)(
-                                        id="dropdown_state",
-                                        value="All",
-                                        clearable=False,
-                                        options=[
-                                            {"label": x, "value": x}
-                                            for x in states_australia
-                                        ],
-                                    ),
-                                ],
-                                width=6,
-                            ),
-                        ]
-                    ),
-                    dbc.Row(
-                        dbc.Col(
+    return [
+        dcc.Store(
+            id="store_year",
+            data=latest_year
+            if "dropdown_year" not in params
+            else params["dropdown_year"],
+        ),
+        dbc.Card(
+            [
+                dbc.CardHeader(
+                    [
+                        "Controls",
+                        dbc.Button(
+                            id="button_reset",
+                            children="Reset",
+                            color="danger",
+                        ),
+                    ],
+                    className="d-flex justify-content-between align-items-center",
+                ),
+                dbc.CardBody(
+                    [
+                        dbc.Form(
                             [
-                                dbc.Button(
-                                    id="button_download",
-                                    children="Download Plot",
-                                    # color="danger",
-                                    className="float-right align-text-bottom",
-                                    style={"margin-top": "41px"},
+                                dbc.Row(
+                                    [
+                                        dbc.Label("Percentile"),
+                                        apply_default_value(params)(dcc.Dropdown)(
+                                            id="dropdown_percentile",
+                                            value=50,
+                                            clearable=False,
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in np.arange(10, 100, 10)
+                                            ],
+                                        ),
+                                    ]
                                 ),
-                                dcc.Download(id="download_plot"),
-                            ],
-                            width=4,
+                                dbc.Row(
+                                    [
+                                        dbc.Label("Year"),
+                                        apply_default_value(params)(dcc.Dropdown)(
+                                            id="dropdown_year",
+                                            value=latest_year,
+                                            clearable=False,
+                                            options=[
+                                                {"label": x, "value": x} for x in years
+                                            ],
+                                        ),
+                                    ]
+                                ),
+                                dbc.Row(
+                                    [
+                                        dbc.Label("Scale"),
+                                        apply_default_value(params)(dcc.Dropdown)(
+                                            id="dropdown_scale",
+                                            value=list(scale_options.keys())[0],
+                                            clearable=False,
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in scale_options.keys()
+                                            ],
+                                        ),
+                                    ]
+                                ),
+                                dbc.Row(
+                                    [
+                                        dbc.Label(
+                                            "State or Territory",
+                                        ),
+                                        apply_default_value(params)(dcc.Dropdown)(
+                                            id="dropdown_state",
+                                            value="All",
+                                            clearable=False,
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in states_australia
+                                            ],
+                                        ),
+                                    ]
+                                ),
+                                dbc.Row(
+                                    [
+                                        dbc.Label("Occupations"),
+                                        apply_default_value(params)(dcc.Dropdown)(
+                                            id="checkbox_occupations",
+                                            options=[
+                                                {"label": x, "value": x}
+                                                for x in np.sort(occs_latest)
+                                            ],
+                                            value=occs_default_selected,
+                                            multi=True,
+                                            optionHeight=50,
+                                        ),
+                                    ]
+                                ),
+                            ]
                         )
-                    ),
-                ]
-            ),
-        ],
-    )
+                    ]
+                ),
+            ]
+        ),
+    ]
 
 
 app.layout = html.Div(
@@ -302,33 +279,67 @@ app.layout = html.Div(
             id="confirm",
             message="Changing years will reset occupation selections to default values. Are you sure you want to continue?",
         ),
+        dbc.NavbarSimple(
+            children=[
+                dbc.NavItem(dbc.NavLink("About", href="#about")),
+            ],
+            brand="Teacher Pay Dashboard",
+            brand_href="#",
+            color="dark",
+            dark=True,
+        ),
         dbc.Container(
             [
                 dbc.Row(
                     [
                         dbc.Col(
+                            html.Div(id="page-layout", children=build_layout([])),
+                            width=4,
+                        ),
+                        dbc.Col(
                             [
-                                dcc.Graph(
-                                    id="graph",
-                                    config={
-                                        "displayModeBar": False,
-                                        "staticPlot": False,
-                                        "responsive": True,
-                                    },
-                                ),
+                                dbc.Card(
+                                    [
+                                        dbc.CardHeader(
+                                            [
+                                                "Output",
+                                                dbc.Button(
+                                                    id="button_download",
+                                                    children="Download",
+                                                    # color="danger",
+                                                ),
+                                                dcc.Download(id="download_plot"),
+                                            ],
+                                            className="d-flex justify-content-between align-items-center",
+                                        ),
+                                        dbc.CardBody(
+                                            [
+                                                dcc.Graph(
+                                                    id="graph",
+                                                    config={
+                                                        "displayModeBar": False,
+                                                        "staticPlot": False,
+                                                        "responsive": True,
+                                                    },
+                                                )
+                                            ]
+                                        ),
+                                    ]
+                                )
                             ],
-                            width=12,
-                        )
+                            width=8,
+                        ),
                     ]
                 ),
-                html.Div(id="page-layout", children=build_layout([])),
                 html.Div(
                     [
                         html.Hr(),
                         instructions,
-                    ]
+                    ],
+                    id="about",
                 ),
-            ]
+            ],
+            className="py-4",
         ),
     ]
 )
@@ -450,7 +461,7 @@ def figure_dict(state, percentile, year, scale, occupations):
         )
 
     layout = go.Layout(
-        height=800,
+        height=600,
         title=dict(
             text=f"Estimated {scale} Income of Full Time Employees<br>{year} - {p.ordinal(percentile)} Percentile",
             font_size=24,
