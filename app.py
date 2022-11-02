@@ -93,7 +93,7 @@ instructions = dbc.Row(
         The figure will automatically update when any change is made.
 
         Changing year may result in losing the currently selected
-        occupations. This is due to changes in occupational codes
+        occupations. This is due to differences in occupational codes
         between census years.
 
         #### About
