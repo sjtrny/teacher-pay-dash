@@ -284,7 +284,7 @@ app.layout = html.Div(
                 dbc.NavItem(html.A("About", href="#about", className="nav-link")),
             ],
             brand="Teacher Pay Dashboard",
-            brand_href="#",
+            brand_href="",
             color="dark",
             dark=True,
         ),
