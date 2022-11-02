@@ -608,7 +608,7 @@ def download_plot(button_nclicks, *args):
         format=format,
         width=w,
         height=h,
-        scale=1,
+        scale=2,
     )
 
     return dcc.send_bytes(img_bytes, filename="download.png")
