@@ -1,3 +1,7 @@
-.Select-menu-outer  .Select--multi .Select-value {
+.Select-menu-outer {
+    font-size: 0.75em;
+}
+
+.Select--multi .Select-value {
     font-size: 0.75em;
 }

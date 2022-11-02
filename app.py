@@ -262,7 +262,7 @@ def build_layout(params):
                                             value=occs_default_selected,
                                             multi=True,
                                             clearable=True,
-                                            # optionHeight=50,
+                                            optionHeight=30,
                                         ),
                                     ]
                                 ),
@@ -476,7 +476,7 @@ def figure_dict(state, percentile, year, scale, occupations):
         xaxis={"fixedrange": True},
         legend=dict(
             orientation="h",
-            title_text="Occupation",
+            title_text=p.plural("Occupation"),
             title_side="top",
             title_font_size=18,
             font_size=16,
