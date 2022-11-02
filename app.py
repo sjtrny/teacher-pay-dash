@@ -65,8 +65,8 @@ states_australia = [
 
 scale_options = {"Annual": 52, "Weekly": 1}
 
-years = pd.Series(combinations["YEAR"].unique()).sort_values(ascending=False)
-latest_year = combinations["YEAR"].iloc[0]
+years = pd.Series(combinations["YEAR"].unique()).sort_values(ascending=True)
+latest_year = combinations["YEAR"].iloc[-1]
 
 occs_latest = data.query(f"YEAR == {latest_year}")["OCCP4D"].unique()
 
