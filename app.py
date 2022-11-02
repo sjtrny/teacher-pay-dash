@@ -211,16 +211,19 @@ def build_layout(params):
                 ]
             ),
             dbc.Row(
-                dbc.Col([
-                    dbc.Button(
-                        id="button_download",
-                        children="Download Plot",
-                        # color="danger",
-                        className="float-right align-text-bottom",
-                        style={"margin-top": "41px"},
-                    ),
-                    dcc.Download(id="download_plot")
-                ], width=4)
+                dbc.Col(
+                    [
+                        dbc.Button(
+                            id="button_download",
+                            children="Download Plot",
+                            # color="danger",
+                            className="float-right align-text-bottom",
+                            style={"margin-top": "41px"},
+                        ),
+                        dcc.Download(id="download_plot"),
+                    ],
+                    width=4,
+                )
             ),
             html.Hr(),
             dbc.Row(
@@ -589,20 +592,19 @@ def year_cancel(**kwargs):
 
 @app.callback(
     Output("download_plot", "data"),
-    inputs= [Input("button_download", "n_clicks")]+graph_inputs,
+    inputs=[Input("button_download", "n_clicks")] + graph_inputs,
     prevent_initial_call=True,
 )
 def download_plot(button_nclicks, *args):
 
     fig = figure_dict(*args)
 
-    w, h = 800, 600
     format = "png"
 
     img_bytes = go.Figure(fig).to_image(
         format=format,
-        width=w,
-        height=h,
+        width=800,
+        height=600,
         scale=1,
     )
 
@@ -610,4 +612,4 @@ def download_plot(button_nclicks, *args):
     mem.write(img_bytes)
     mem.seek(0)
 
-    return dcc.send_bytes(mem.read(), filename='download.png')
+    return dcc.send_bytes(mem.read(), filename=f"download.{format}")
