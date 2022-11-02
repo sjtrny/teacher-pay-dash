@@ -205,7 +205,7 @@ def build_layout(params):
                                                 for x in np.arange(10, 100, 10)
                                             ],
                                         ),
-                                    ]
+                                    ], className='mb-2  '
                                 ),
                                 dbc.Row(
                                     [
@@ -218,7 +218,7 @@ def build_layout(params):
                                                 {"label": x, "value": x} for x in years
                                             ],
                                         ),
-                                    ]
+                                    ], className='mb-2'
                                 ),
                                 dbc.Row(
                                     [
@@ -232,7 +232,7 @@ def build_layout(params):
                                                 for x in scale_options.keys()
                                             ],
                                         ),
-                                    ]
+                                    ], className='mb-2'
                                 ),
                                 dbc.Row(
                                     [
@@ -248,7 +248,7 @@ def build_layout(params):
                                                 for x in states_australia
                                             ],
                                         ),
-                                    ]
+                                    ], className='mb-2'
                                 ),
                                 dbc.Row(
                                     [
@@ -264,7 +264,7 @@ def build_layout(params):
                                             clearable=True,
                                             optionHeight=30,
                                         ),
-                                    ]
+                                    ], className='mb-3'
                                 ),
                             ]
                         )
