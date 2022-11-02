@@ -451,9 +451,8 @@ def get_pcntiles(state, year, occupation):
 
 def figure_dict(state, percentile, year, scale, occupations):
     plot_list = []
-    occs = np.sort(occupations)
 
-    for occ in occs:
+    for occ in occupations:
 
         line_data = (
             get_pcntiles(state, year, occ)
