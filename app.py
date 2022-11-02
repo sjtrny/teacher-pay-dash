@@ -1,7 +1,4 @@
-import ast
-import io
 from functools import lru_cache
-from shutil import which
 from urllib.parse import urlencode
 
 import dash
@@ -19,10 +16,6 @@ from app_util import apply_default_value, dash_kwarg, parse_state
 from process_data import *
 
 p = inflect.engine()
-
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.title = "NSW Teacher Pay"
-server = app.server
 
 data_2021 = process_census_data(
     "data/teacher_pay_2021.csv",
@@ -83,7 +76,9 @@ occs_default_selected = [
     "Primary School Teachers",
 ]
 
-orca_available = True if which("orca") else False
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app.title = "NSW Teacher Pay"
+server = app.server
 
 
 def build_layout(params):
@@ -599,17 +594,18 @@ def download_plot(button_nclicks, *args):
 
     fig = figure_dict(*args)
 
+    w, h = 800, 600
     format = "png"
 
     img_bytes = go.Figure(fig).to_image(
         format=format,
-        width=800,
-        height=600,
+        width=w,
+        height=h,
         scale=1,
     )
 
-    mem = io.BytesIO()
-    mem.write(img_bytes)
-    mem.seek(0)
+    return dcc.send_bytes(img_bytes, filename="download.png")
 
-    return dcc.send_bytes(mem.read(), filename=f"download.{format}")
+
+if __name__ == "__main__":
+    app.run_server(debug=True)
