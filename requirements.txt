@@ -5,4 +5,5 @@ dash-bootstrap-components==1.2.1
 gunicorn==20.1.0
 inflect==6.0.0
 isort==5.10.1
+kaleido==0.2.1
 pandas==1.4.3

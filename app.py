@@ -210,6 +210,18 @@ def build_layout(params):
                     ),
                 ]
             ),
+            dbc.Row(
+                dbc.Col([
+                    dbc.Button(
+                        id="button_download",
+                        children="Download Plot",
+                        # color="danger",
+                        className="float-right align-text-bottom",
+                        style={"margin-top": "41px"},
+                    ),
+                    dcc.Download(id="download_plot")
+                ], width=4)
+            ),
             html.Hr(),
             dbc.Row(
                 [
@@ -575,34 +587,19 @@ def year_cancel(**kwargs):
     return kwargs["store_year"]
 
 
-@app.server.route(
-    f"/download/",
-    endpoint=f"serve_figure",
+@app.callback(
+    Output("download_plot", "data"),
+    inputs= [Input("button_download", "n_clicks")]+graph_inputs,
+    prevent_initial_call=True,
 )
-def serve_figure():
-    inputs = []
+def download_plot(button_nclicks, *args):
 
-    component_ids = [x.component_id for x in components]
-    graph_input_ids = [x.component_id for x in graph_inputs]
-
-    for x in component_ids:
-        original = flask.request.args[x]
-
-        try:
-            val = ast.literal_eval(original)
-        except Exception:
-            val = original
-
-        inputs.append(val)
-
-    input_dict = dict(zip(component_ids, inputs))
-
-    fig_dict = figure_dict(*[v for k, v in input_dict.items() if k in graph_input_ids])
+    fig = figure_dict(*args)
 
     w, h = 800, 600
     format = "png"
 
-    img_bytes = go.Figure(fig_dict).to_image(
+    img_bytes = go.Figure(fig).to_image(
         format=format,
         width=w,
         height=h,
@@ -613,13 +610,4 @@ def serve_figure():
     mem.write(img_bytes)
     mem.seek(0)
 
-    return flask.send_file(
-        mem,
-        attachment_filename=f"plot.{format}",
-        as_attachment=True,
-        cache_timeout=0,
-    )
-
-
-if __name__ == "__main__":
-    app.run_server(debug=True)
+    return dcc.send_bytes(mem.read(), filename='download.png')
