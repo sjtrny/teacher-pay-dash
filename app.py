@@ -75,7 +75,9 @@ occs_default_selected = [
     "Primary School Teachers",
 ]
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, "/assets/style.css"])
+app = dash.Dash(
+    __name__, external_stylesheets=[dbc.themes.BOOTSTRAP, "/assets/style.css"]
+)
 app.title = "NSW Teacher Pay"
 server = app.server
 
@@ -205,7 +207,8 @@ def build_layout(params):
                                                 for x in np.arange(10, 100, 10)
                                             ],
                                         ),
-                                    ], className='mb-2  '
+                                    ],
+                                    className="mb-2  ",
                                 ),
                                 dbc.Row(
                                     [
@@ -218,7 +221,8 @@ def build_layout(params):
                                                 {"label": x, "value": x} for x in years
                                             ],
                                         ),
-                                    ], className='mb-2'
+                                    ],
+                                    className="mb-2",
                                 ),
                                 dbc.Row(
                                     [
@@ -232,7 +236,8 @@ def build_layout(params):
                                                 for x in scale_options.keys()
                                             ],
                                         ),
-                                    ], className='mb-2'
+                                    ],
+                                    className="mb-2",
                                 ),
                                 dbc.Row(
                                     [
@@ -248,7 +253,8 @@ def build_layout(params):
                                                 for x in states_australia
                                             ],
                                         ),
-                                    ], className='mb-2'
+                                    ],
+                                    className="mb-2",
                                 ),
                                 dbc.Row(
                                     [
@@ -264,7 +270,8 @@ def build_layout(params):
                                             clearable=True,
                                             optionHeight=30,
                                         ),
-                                    ], className='mb-3'
+                                    ],
+                                    className="mb-3",
                                 ),
                             ]
                         )
@@ -587,7 +594,6 @@ def year_change(**kwargs):
 @dash_kwarg([Input("confirm", "cancel_n_clicks")] + [State("store_year", "data")])
 def year_cancel(**kwargs):
     return kwargs["store_year"]
-
 
 
 @app.callback(
