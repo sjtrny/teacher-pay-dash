@@ -75,7 +75,7 @@ occs_default_selected = [
     "Primary School Teachers",
 ]
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, "/assets/style.css"])
 app.title = "NSW Teacher Pay"
 server = app.server
 
@@ -261,7 +261,8 @@ def build_layout(params):
                                             ],
                                             value=occs_default_selected,
                                             multi=True,
-                                            optionHeight=50,
+                                            clearable=True,
+                                            # optionHeight=50,
                                         ),
                                     ]
                                 ),
