@@ -208,7 +208,7 @@ def build_layout(params):
                                             ],
                                         ),
                                     ],
-                                    className="mb-2  ",
+                                    className="mb-2",
                                 ),
                                 dbc.Row(
                                     [
