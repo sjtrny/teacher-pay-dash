@@ -1,6 +1,7 @@
 name: Build & Deploy
 
 on:
+    orkflow_dispatch:
     push:
         branches:
             - master
