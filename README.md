@@ -1,4 +1,4 @@
-# teacher_pay_dash
+# teacher-pay-dash
 
 Go to https://teacher-pay-dash.apps.sjtrny.com/
 
